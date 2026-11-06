@@ -1,0 +1,19 @@
+# AI Agents Level Calculator - Cloudflare Worker config.
+#
+# Deploy with: wrangler login && wrangler deploy
+# Then set the secret: wrangler secret put CLOCKED_API_KEY
+# See DEPLOY.md for the full manual steps.
+#
+# The Worker serves the single-page frontend from
+# ./ai_agents_level_calculator/static via Workers Static Assets
+# (env.ASSETS) and handles /api/* itself. The Clocked key is read
+# server-side only from the CLOCKED_API_KEY Worker secret.
+# Without the secret the Worker runs in mock mode and says so.
+
+name = "ai-agents-level-calculator"
+main = "worker/src/index.js"
+compatibility_date = "2026-11-06"
+
+[assets]
+directory = "./ai_agents_level_calculator/static"
+binding = "ASSETS"

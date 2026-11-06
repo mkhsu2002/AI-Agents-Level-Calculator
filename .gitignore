@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.key
+*.pem
+uploads/
+*.png
+!ai_agents_level_calculator/static/*.png
+.DS_Store
+.wrangler/
+node_modules/
+.dev.vars
