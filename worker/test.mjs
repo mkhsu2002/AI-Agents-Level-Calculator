@@ -145,7 +145,7 @@ test("v0.16 Live rejects profile-only estimates without a billable Clocked call"
   let calls = 0;
   globalThis.fetch = async () => { calls += 1; throw new Error("Clocked must not be contacted"); };
   try {
-    for (const evidence_text of ["", "\\n  \\n"]) {
+    for (const evidence_text of ["", "    "]) {
       const res = await worker.fetch(new Request("https://example.com/api/audit", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

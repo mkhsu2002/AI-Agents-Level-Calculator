@@ -38,7 +38,7 @@
 
 const CLOCKED_BASE = "https://clocked.rezolve.ai/clocked";
 const MAX_STATE_CHARS = 10000;
-const APP_VERSION = "v0.16";
+const APP_VERSION = "v0.17";
 
 const DIMENSIONS = [
   { key: "IDENTITY", label: "Identity" },

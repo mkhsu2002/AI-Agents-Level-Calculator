@@ -3,7 +3,7 @@
 // memory, prompts, secrets, raw conversations, or file paths to this endpoint.
 import baseWorker from "./index.js";
 
-const VERSION = "v0.16";
+const VERSION = "v0.17";
 const PROTOCOL = "2025-03-26";
 const MAX_BYTES = 32_000;
 const FIELDS = [
