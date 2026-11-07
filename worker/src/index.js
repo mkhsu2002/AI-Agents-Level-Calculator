@@ -502,6 +502,25 @@ function normaliseFields(rawFields) {
   return fields;
 }
 
+// v0.02: A Clocked extraction is NOT evidence for an unrelated named field.
+// Match the actual field key and numeric/boolean value on the same source line.
+// This is source-text verification, not proof of an agent's private file history.
+function exactEvidenceValue(text, name) {
+  const lines = text.split("\n");
+  for (const line of lines) {
+    const match = line.trim().match(/^([a-z_]+)\s*:\s*(true|false|\d+(?:\.\d+)?)\s*$/i);
+    if (!match || match[1] !== name) continue;
+    const raw = match[2].toLowerCase();
+    return { value: raw === "true" ? true : raw === "false" ? false : Number(raw), sources: [{ quote: line.trim() }] };
+  }
+  return null;
+}
+
+function valueEquals(a, b) {
+  if (typeof a === "boolean" || typeof b === "boolean") return a === b;
+  return typeof a === "number" && Number.isFinite(a) && Number(a) === Number(b);
+}
+
 async function runAudit(agentName, platform, evidenceText, rawFields, client) {
   let creditsTotal = 0;
   const trail = [];
@@ -543,15 +562,22 @@ async function runAudit(agentName, platform, evidenceText, rawFields, client) {
   trail.push({ step: "fill", note: "Filled " + Object.keys(filled.values || {}).length + " of " + PROFILE_FIELDS.length + " fields; " + (filled.missing || []).length + " reported missing, never invented.", credits: filled.credits || 0 });
 
   const fields = normaliseFields(rawFields);
-  for (const [name, answer] of Object.entries(filled.values || {})) {
-    if (name in fields) {
-      fields[name] = { value: answer.value, status: "verified", confidence: answer.confidence, sources: answer.sources || [] };
-    }
+  // The caller may provide estimates, never verified status.
+  for (const entry of Object.values(fields)) {
+    if (entry.status === "verified") entry.status = "estimated";
   }
-  for (const [name, answer] of Object.entries(extracted.answers || {})) {
-    if (name in fields && fields[name].status !== "verified") {
-      fields[name] = { value: answer.value, status: "verified", confidence: answer.confidence, sources: answer.sources || [] };
-    }
+  for (const spec of PROFILE_FIELDS) {
+    const name = spec.name;
+    const evidence = exactEvidenceValue(safeText, name);
+    if (!evidence) continue;
+    const candidate = (filled.values || {})[name] || (extracted.answers || {})[name];
+    // Prefer directly observed text over possibly misaligned AI extraction.
+    fields[name] = {
+      value: evidence.value, status: "verified",
+      confidence: candidate && valueEquals(candidate.value, evidence.value) ? candidate.confidence : 1,
+      sources: evidence.sources,
+      source_method: "exact_named_line"
+    };
   }
 
   const decided = await client.decide(safeText, {
@@ -638,6 +664,7 @@ async function runAudit(agentName, platform, evidenceText, rawFields, client) {
       confidence: entry.confidence,
       verification: entry.verification,
       sources: entry.sources || [],
+      source_method: entry.source_method,
     }])
   );
 
