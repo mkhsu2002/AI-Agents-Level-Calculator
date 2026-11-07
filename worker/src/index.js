@@ -38,7 +38,7 @@
 
 const CLOCKED_BASE = "https://clocked.rezolve.ai/clocked";
 const MAX_STATE_CHARS = 10000;
-const APP_VERSION = "v0.04";
+const APP_VERSION = "v0.05";
 
 const DIMENSIONS = [
   { key: "IDENTITY", label: "Identity" },
@@ -834,6 +834,36 @@ function modeOf(env) {
   return env && env.CLOCKED_API_KEY ? "live" : "mock";
 }
 
+// v0.05: Authenticate Live audit results before rendering branded Live cards.
+// The secret is server-side. Mock cards remain visibly labelled as demos.
+async function auditHmacKey(env) {
+  const secret = env?.CARD_SIGNING_KEY || env?.CLOCKED_API_KEY;
+  if (!secret) return null;
+  return crypto.subtle.importKey("raw", new TextEncoder().encode("aalc-card-v1:" + secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
+}
+function unsignedAudit(audit) {
+  const copy = { ...audit };
+  delete copy.audit_proof;
+  return JSON.stringify(copy);
+}
+async function signLiveAudit(audit, env) {
+  if (audit.mode !== "live" || audit.status !== "complete") return audit;
+  const key = await auditHmacKey(env);
+  if (!key) throw new Error("Signing secret unavailable");
+  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(unsignedAudit(audit)));
+  audit.audit_proof = { alg: "HMAC-SHA256", signature: Array.from(new Uint8Array(mac), b => b.toString(16).padStart(2, "0")).join("") };
+  return audit;
+}
+async function validLiveAudit(audit, env) {
+  const hex = audit?.audit_proof?.signature;
+  if (typeof hex !== "string" || !/^[0-9a-f]{64}$/.test(hex)) return false;
+  const key = await auditHmacKey(env);
+  if (!key) return false;
+  const bytes = Uint8Array.from(hex.match(/../g), h => parseInt(h, 16));
+  return crypto.subtle.verify("HMAC", key, bytes, new TextEncoder().encode(unsignedAudit(audit)));
+}
+
 function jsonResponse(payload, status = 200) {
   return new Response(JSON.stringify(payload), { status, headers: { "Content-Type": "application/json" } });
 }
@@ -872,7 +902,7 @@ async function handleRequest(request, env) {
         payload.profile || {},
         client
       );
-      return jsonResponse(audit);
+      return jsonResponse(await signLiveAudit(audit, env));
     } catch (err) {
       return jsonResponse({ error: "Audit failed: " + err.message }, 502);
     }
@@ -886,6 +916,9 @@ async function handleRequest(request, env) {
     }
     if (!payload.result) {
       return jsonResponse({ error: "Send an audit result to render a card." }, 400);
+    }
+    if (payload.mode === "live" && !(await validLiveAudit(payload, env))) {
+      return jsonResponse({ error: "This Live audit card needs a valid server-issued audit proof." }, 403);
     }
     const svg = renderCardSvg(payload);
     return new Response(svg, {
