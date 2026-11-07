@@ -38,7 +38,7 @@
 
 const CLOCKED_BASE = "https://clocked.rezolve.ai/clocked";
 const MAX_STATE_CHARS = 10000;
-const APP_VERSION = "v0.11";
+const APP_VERSION = "v0.12";
 
 const DIMENSIONS = [
   { key: "IDENTITY", label: "Identity" },
@@ -361,7 +361,7 @@ class ClockedClient {
 // Verified fields count at full weight, estimated at half, missing at zero.
 // Composite is the mean of the six dimension scores. XP = 100 * skills
 // + 80 * domains + 40 * goals_done + 25 * deliveries, with estimated
-// fields at half value. Level L requires 50 * L * (L - 1) XP.
+// fields excluded from XP; estimated values still half-weight in dimension scores.
 // ---------------------------------------------------------------------------
 
 const WEIGHTS = { verified: 1.0, estimated: 0.5, missing: 0.0 };
@@ -397,6 +397,13 @@ function numField(fields, name) {
   const { value, weight } = fieldEntry(fields, name);
   const n = Number(value);
   return Number.isFinite(n) ? n * weight : 0;
+}
+
+function xpNumField(fields, name) {
+  const { value, status } = fieldEntry(fields, name);
+  if (status !== "verified") return 0;
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.max(0, n) : 0;
 }
 
 function rawField(fields, name) {
@@ -456,7 +463,7 @@ function scoreFields(fields, integrity) {
   const dimensions = {};
   for (const dim of DIMENSIONS) dimensions[dim.key] = pyRound(dimensionValue(dim.key, fields, integrity));
   const composite = dimensions && DIMENSIONS.length ? pyRound(Object.values(dimensions).reduce((a, b) => a + b, 0) / DIMENSIONS.length) : 0;
-  const xp = Math.round(100 * numField(fields, "skills") + 80 * numField(fields, "domains") + 40 * numField(fields, "goals_done") + 25 * numField(fields, "deliveries"));
+  const xp = Math.round(100 * xpNumField(fields, "skills") + 80 * xpNumField(fields, "domains") + 40 * xpNumField(fields, "goals_done") + 25 * xpNumField(fields, "deliveries"));
   const level = levelForXp(xp);
   const statuses = {};
   const weights = [];
