@@ -407,6 +407,12 @@ provisional. The full evidence trail is shown on the page.
 
 ## Changelog
 
+### v0.02 - 2026-11-06
+
+- Reject cross-field AI source attribution: a verified numeric claim must match an exact named evidence line.
+- User-supplied `status: verified` never grants independently verified scoring.
+- Regression-tested against the deployed Clocked Live audit endpoint with `goals_done`, `domains`, and `goals_total`.
+
 ### v0.01 - 2026-11-06
 
 First public release.
