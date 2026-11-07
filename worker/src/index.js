@@ -38,6 +38,7 @@
 
 const CLOCKED_BASE = "https://clocked.rezolve.ai/clocked";
 const MAX_STATE_CHARS = 10000;
+const APP_VERSION = "v0.03";
 
 const DIMENSIONS = [
   { key: "IDENTITY", label: "Identity" },
@@ -842,6 +843,7 @@ async function handleRequest(request, env) {
   const mode = modeOf(env);
   const client = new ClockedClient(mode, env ? env.CLOCKED_API_KEY : undefined);
 
+  if (request.method === "GET" && url.pathname === "/api/version") return jsonResponse({ version: APP_VERSION });
   if (request.method === "GET" && (url.pathname === "/api/mode")) {
     return jsonResponse({ mode });
   }
@@ -855,6 +857,12 @@ async function handleRequest(request, env) {
       payload = await request.json();
     } catch {
       return jsonResponse({ error: "Invalid JSON." }, 400);
+    }
+    // Reject inputs that cannot produce evidence before calling billable Clocked APIs.
+    const evidenceText = typeof payload.evidence_text === "string" ? payload.evidence_text.trim() : "";
+    const profile = payload.profile && typeof payload.profile === "object" && !Array.isArray(payload.profile) ? payload.profile : {};
+    if (!evidenceText && !Object.values(profile).some(v => v !== null && v !== undefined && v !== "")) {
+      return jsonResponse({ error: "No agent evidence provided. Supply authorized aggregate file statistics or profile values before running an audit.", version: APP_VERSION }, 400);
     }
     try {
       const audit = await runAudit(
