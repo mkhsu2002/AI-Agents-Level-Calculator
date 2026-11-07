@@ -38,7 +38,7 @@
 
 const CLOCKED_BASE = "https://clocked.rezolve.ai/clocked";
 const MAX_STATE_CHARS = 10000;
-const APP_VERSION = "v0.17";
+const APP_VERSION = "v0.22";
 
 const DIMENSIONS = [
   { key: "IDENTITY", label: "Identity" },
@@ -718,7 +718,7 @@ function hexPoints(cx, cy, radius) {
 function renderCardSvg(audit) {
   const r = audit.result;
   const W = 1080, H = 1920;
-  const cx = 540, cy = 850, R = 270;
+  const cx = 540, cy = 815, R = 205;
   const n = r.dimension_order.length;
   const race = String(audit.platform || "other").toUpperCase();
   const mode = audit.mode || "mock";
@@ -753,7 +753,7 @@ function renderCardSvg(audit) {
 
   // Neon dimension bars.
   let bars = "";
-  let y = 1200;
+  let y = 1158;
   r.dimension_order.forEach((k, i) => {
     const v = r.dimensions[k];
     const color = dimColor[k] || "#00f0ff";
@@ -761,26 +761,31 @@ function renderCardSvg(audit) {
     bars += '<text x="1016" y="' + y + '" fill="' + color + '" font-size="30" font-weight="bold" text-anchor="end">' + v + "</text>";
     bars += '<rect x="64" y="' + (y + 12) + '" width="952" height="12" rx="6" fill="#334155"/>';
     bars += '<rect x="64" y="' + (y + 12) + '" width="' + Math.round(952 * v / 100) + '" height="12" rx="6" fill="' + color + '"/>';
-    y += 56;
+    y += 57;
   });
 
-  // Evidence per field, two columns.
+  // Evidence grid: two columns, six distinct rows with aligned values and
+  // short badges. Status text is not a claim of independent private-file proof.
   const statusColor = { verified: "#4ade80", estimated: "#fbbf24", missing: "#f87171" };
-  const fieldEntries = Object.entries(r.field_detail || {});
+  const statusLabel = { verified: "MATCH", estimated: "EST.", missing: "N/A" };
   const evidenceNames = ["persona_items", "memory_entries", "domains", "skills", "goals_done", "deliveries", "pass_rate", "honesty_disclosed", "reasoning_examples", "platforms", "goals_total", "fixes_acknowledged"];
-  let fields = "";
-  fields += '<text x="56" y="1580" fill="#00f0ff" font-size="30" font-weight="bold">// EVIDENCE</text>';
+  let fields = '<text x="64" y="1547" fill="#00f0ff" font-size="28" font-weight="bold">EVIDENCE</text>' +
+    '<text x="1016" y="1547" fill="#94a3b8" font-size="18" text-anchor="end">MATCH = matched submitted text, not private-file proof</text>';
   evidenceNames.forEach((name, idx) => {
     const d = (r.field_detail || {})[name];
     if (!d) return;
     const col = idx % 2;
     const row = Math.floor(idx / 2);
-    const fx = 64 + col * 500;
-    const fy = 1624 + row * 34;
+    const fx = 64 + col * 492;
+    const fy = 1571 + row * 42;
     const val = d.value === null || d.value === undefined ? "-" : String(d.value);
-    fields += '<circle cx="' + (fx + 9) + '" cy="' + (fy - 7) + '" r="9" fill="' + (statusColor[d.status] || "#94a3b8") + '"/>';
-    fields += '<text x="' + (fx + 28) + '" y="' + fy + '" fill="#ebf5ff" font-size="22">' + escXml(name + ": " + val) + "</text>";
-    fields += '<text x="' + (fx + 470) + '" y="' + fy + '" fill="' + (statusColor[d.status] || "#94a3b8") + '" font-size="22" font-weight="bold" text-anchor="end">' + escXml(d.status) + "</text>";
+    const color = statusColor[d.status] || "#94a3b8";
+    const label = statusLabel[d.status] || "N/A";
+    fields += '<rect x="' + fx + '" y="' + fy + '" width="466" height="36" rx="7" fill="#10192b" stroke="#28344a"/>';
+    fields += '<circle cx="' + (fx + 14) + '" cy="' + (fy + 18) + '" r="5" fill="' + color + '"/>';
+    fields += '<text x="' + (fx + 28) + '" y="' + (fy + 24) + '" fill="#e2e8f0" font-size="19">' + escXml(name) + '</text>';
+    fields += '<text x="' + (fx + 313) + '" y="' + (fy + 24) + '" fill="#ffffff" font-size="20" font-weight="bold" text-anchor="end">' + escXml(val) + '</text>';
+    fields += '<text x="' + (fx + 454) + '" y="' + (fy + 24) + '" fill="' + color + '" font-size="17" font-weight="bold" text-anchor="end">' + label + '</text>';
   });
 
   // Level hex badge.
@@ -788,8 +793,8 @@ function renderCardSvg(audit) {
   const hexPts = hexPoints(hexCx, hexCy, hexR).map(([x, yy]) => x.toFixed(1) + "," + yy.toFixed(1)).join(" ");
   const hexInner = hexPoints(hexCx, hexCy, hexR - 12).map(([x, yy]) => x.toFixed(1) + "," + yy.toFixed(1)).join(" ");
   const provisional = r.provisional
-    ? '<text x="56" y="480" fill="#fbbf24" font-size="26" font-weight="bold">PROVISIONAL - rests on estimated or missing fields</text>'
-    : '<text x="56" y="480" fill="#4ade80" font-size="26" font-weight="bold">SOURCE-MATCHED - submitted evidence, not private-file proof</text>';
+    ? '<text x="56" y="463" fill="#fbbf24" font-size="26" font-weight="bold">PROVISIONAL - rests on estimated or missing fields</text>'
+    : '<text x="56" y="463" fill="#4ade80" font-size="26" font-weight="bold">SOURCE-MATCHED - submitted evidence, not private-file proof</text>';
   const modeText = mode === "live" ? "LIVE AUDIT" : "MOCK AUDIT - DEMO ONLY";
   const modeColor = mode === "live" ? "#4ade80" : "#fbbf24";
 
@@ -821,13 +826,13 @@ function renderCardSvg(audit) {
     '<text x="56" y="374" fill="#00f0ff" font-size="44" font-weight="bold">綜合 ' + r.composite + "</text>" +
     '<text x="56" y="436" fill="#8296b4" font-size="28">XP ' + r.xp + "   信心 " + Math.round(r.audit_confidence * 100) + "%</text>" +
     provisional +
-    '<text x="540" y="496" fill="#ff2d78" font-size="26" font-weight="bold" text-anchor="middle">- SIX-AXIS RADAR -</text>' +
+    '<text x="540" y="520" fill="#ff2d78" font-size="24" font-weight="bold" text-anchor="middle">SIX-AXIS RADAR</text>' +
     grid + axes +
     '<polygon points="' + poly + '" fill="rgba(255,45,120,0.25)" stroke="#ff2d78" stroke-width="2"/>' +
     '<polygon points="' + poly + '" fill="none" stroke="#00f0ff" stroke-width="2"/>' + dots +
     bars + fields +
-    '<text x="540" y="1830" fill="#ff2d78" font-size="28" font-weight="bold" text-anchor="middle">CLOCKED EMPOWER  //  WHAT LEVEL IS YOUR AI AGENT?</text>' +
-    '<text x="540" y="1870" fill="#8296b4" font-size="22" text-anchor="middle">SELF-AUDITED STATISTICS - PRIVATE FILES NOT INDEPENDENTLY VERIFIED</text>' +
+    '<text x="540" y="1855" fill="#ff2d78" font-size="28" font-weight="bold" text-anchor="middle">CLOCKED EMPOWER  //  WHAT LEVEL IS YOUR AI AGENT?</text>' +
+    '<text x="540" y="1882" fill="#8296b4" font-size="22" text-anchor="middle">SELF-AUDITED STATISTICS - PRIVATE FILES NOT INDEPENDENTLY VERIFIED</text>' +
     "</svg>"
   );
 }
