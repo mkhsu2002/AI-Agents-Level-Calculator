@@ -38,7 +38,7 @@
 
 const CLOCKED_BASE = "https://clocked.rezolve.ai/clocked";
 const MAX_STATE_CHARS = 10000;
-const APP_VERSION = "v0.05";
+const APP_VERSION = "v0.06";
 
 const DIMENSIONS = [
   { key: "IDENTITY", label: "Identity" },
@@ -873,6 +873,22 @@ async function handleRequest(request, env) {
   const mode = modeOf(env);
   const client = new ClockedClient(mode, env ? env.CLOCKED_API_KEY : undefined);
 
+  if (request.method === "GET" && url.pathname === "/api/health") {
+    const signingKey = await auditHmacKey(env);
+    let signatureRoundtrip = false;
+    if (signingKey) {
+      const probe = { mode: "live", status: "complete", agent_name: "health-check", result: { level: 1 } };
+      const signed = await signLiveAudit(probe, env);
+      signatureRoundtrip = await validLiveAudit(signed, env);
+    }
+    return jsonResponse({
+      version: APP_VERSION,
+      mode,
+      signing_ready: Boolean(signingKey),
+      signature_roundtrip: signatureRoundtrip,
+      clocked_api_call_performed: false
+    });
+  }
   if (request.method === "GET" && url.pathname === "/api/version") return jsonResponse({ version: APP_VERSION });
   if (request.method === "GET" && (url.pathname === "/api/mode")) {
     return jsonResponse({ mode });
