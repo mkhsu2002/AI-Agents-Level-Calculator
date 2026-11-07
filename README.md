@@ -310,6 +310,10 @@ directly too.
 
 ## Deployment
 
+Production target: Cloudflare Pages at `https://aalc.flypigai.ca` (custom domain pending). For GitHub-integrated Pages setup, see [PAGES_DEPLOY.md](PAGES_DEPLOY.md). Build output: `ai_agents_level_calculator/static`; Functions are in the repository root `functions/` directory. The current `flypigai.ca` apex site is not replaced.
+
+MCP-enabled agents may connect to `/mcp` on the deployed site. See [MCP_AGENT_GUIDE.md](MCP_AGENT_GUIDE.md). The agent entry page is `/agent`; plain URL reading does not automatically enable MCP for every agent client.
+
 Public repo: https://github.com/mkhsu2002/AI-Agents-Level-Calculator
 
 The app deploys on Cloudflare as a Worker. Full manual steps are in
@@ -357,7 +361,7 @@ The Cloudflare Worker has its own Node test, mock mode only, no
 deploy and no live key needed:
 
 ```sh
-node --test worker/test.mjs
+node --test worker/test.mjs worker/mcp.test.mjs worker/pages.test.mjs
 ```
 
 ## Troubleshooting
