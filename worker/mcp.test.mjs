@@ -38,7 +38,7 @@ test("agent audit follows unchanged Clocked mock pipeline", async () => {
   assert.equal(data.mode, "mock");
   assert.equal(data.result.level, 10);
   assert.equal(data.result.composite, 78);
-  assert.match(data.evidence_basis, /self-audited/);
+  assert.equal(Object.hasOwn(data, "evidence_basis"), false); // audit payload remains canonical
 });
 test("card can be rendered as SVG resource", async () => {
   const demo = await worker.fetch(new Request("https://test.example/api/demo"), env);
@@ -153,4 +153,23 @@ test("v0.18 rejected MCP audit still emits non-sensitive failure log", async () 
   } finally {
     console.info = previous;
   }
+});
+
+test("v0.21 MCP keeps audit JSON intact for subsequent get_level_card", async () => {
+  const data = {
+    agent_name: "Roundtrip", platform: "other",
+    evidence_text: "skills: 3\\ndomains: 1", profile: {}
+  };
+  const auditCall = await rpc("tools/call", {
+    name: "run_level_audit", arguments: data
+  });
+  assert.equal(auditCall.body.result.isError, false);
+  const audit = JSON.parse(auditCall.body.result.content[0].text);
+  assert.equal(Object.hasOwn(audit, "evidence_basis"), false);
+  assert.equal(Object.hasOwn(audit, "audit_proof"), false);
+  const card = await rpc("tools/call", {
+    name: "get_level_card", arguments: { audit }
+  });
+  assert.equal(card.body.result.isError, false);
+  assert.match(card.body.result.content[0].resource.text, /<svg/);
 });
