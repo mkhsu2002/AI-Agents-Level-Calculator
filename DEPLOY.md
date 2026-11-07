@@ -33,12 +33,11 @@ Two deliberate differences from the local Python server:
    Same layout, same content. The frontend downloads whichever
    format the server returns (`.svg` from the Worker, `.png`
    locally).
-2. **Verify cost.** The Worker checks all filled claims in one
-   batched grounding call, the same as the Python server, so a live
-   Worker audit costs the same 11 to 14 credits. (An earlier draft
-   used one grounding call per claim from the documented shape;
-   live testing on 2026-11-06 showed the batched shape works and
-   the per-claim shape does not.) Mock mode costs nothing.
+2. **Verify.** The Worker checks all filled claims in one
+   batched grounding call, the same as the Python server. (An
+   earlier draft used one grounding call per claim from the
+   documented shape; live testing on 2026-11-06 showed the batched
+   shape works and the per-claim shape does not.)
 
 ## Prerequisites
 
@@ -50,7 +49,7 @@ Two deliberate differences from the local Python server:
 - A Clocked account API key. Create it in the Clocked account
   profile. Live mode was verified on 2026-11-06 with a free trial
   key (no card attached): a full audit of the demo returned
-  Level 10 Builder, composite 75, for 14 credits on a re-run with header-measured credits. Still verify the
+  Level 10 Builder, composite 75. Still verify the
   live audit right after deploy as described below, with your own
   key.
 
@@ -114,12 +113,11 @@ Open the Worker URL in a browser and check, in order:
    composite 78, provisional (mock demo, statistics only).
 3. Fill the form with a small piece of real evidence and press
    **Run audit**. A live audit returns a level, a composite, six
-   dimension scores, and an evidence trail with per-step credits.
+   dimension scores, and an evidence trail.
 4. Press **Download 9:16 card**. It downloads an SVG card,
    1080 x 1920.
-5. In the Cloudflare dashboard, check the Worker logs and the
-   Clocked account credit balance to confirm calls were made and
-   charged at the expected rate.
+5. In the Cloudflare dashboard, check the Worker logs to confirm
+   the calls were made.
 
 If step 1 still shows mock mode, the secret is missing or the
 Worker was deployed before the secret was set; run

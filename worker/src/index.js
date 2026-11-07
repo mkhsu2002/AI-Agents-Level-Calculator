@@ -34,7 +34,7 @@
 //   booleans); Grounding needs documents, claims, AND a non-empty
 //   "answer" string; PII returns entity spans only, redaction is
 //   done here. A full live audit of the demo returned Level 10
-//   Builder, composite 75, for 48 credits.
+//   Builder, composite 75.
 
 const CLOCKED_BASE = "https://clocked.rezolve.ai/clocked";
 const MAX_STATE_CHARS = 10000;
@@ -784,7 +784,7 @@ function renderCardSvg(audit) {
     '<text x="' + hexCx + '" y="' + (hexCy + 38) + '" fill="#ffd600" font-size="68" font-weight="bold" text-anchor="middle">' + r.level + "</text>" +
     '<text x="' + hexCx + '" y="' + (hexCy + hexR + 38) + '" fill="#ebf5ff" font-size="26" font-weight="bold" text-anchor="middle">' + escXml(r.title.toUpperCase()) + "</text>" +
     '<text x="56" y="374" fill="#00f0ff" font-size="44" font-weight="bold">綜合 ' + r.composite + "</text>" +
-    '<text x="56" y="436" fill="#8296b4" font-size="28">XP ' + r.xp + "   信心 " + Math.round(r.audit_confidence * 100) + "%   " + (audit.credits_used || 0) + " CREDITS</text>" +
+    '<text x="56" y="436" fill="#8296b4" font-size="28">XP ' + r.xp + "   信心 " + Math.round(r.audit_confidence * 100) + "%</text>" +
     provisional +
     '<text x="540" y="496" fill="#ff2d78" font-size="26" font-weight="bold" text-anchor="middle">- SIX-AXIS RADAR -</text>' +
     grid + axes +

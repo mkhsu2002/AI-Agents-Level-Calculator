@@ -145,10 +145,9 @@ shows, in order:
   **verified** (green, found in your evidence and confirmed),
   **estimated** (yellow, supplied without evidence or unconfirmed),
   **missing** (red, no evidence at all).
-- **Evidence trail** - the six pipeline steps with what each one
-  did and what it cost in credits.
+- **Evidence trail** - the six pipeline steps with what each one did.
 - **Meta line** - audit confidence (the share of fields that are
-  verified), XP, credits used, mode, and whether the result is
+  verified), XP, mode, and whether the result is
   **PROVISIONAL** (rests on estimated or missing fields) or fully
   verified.
 
@@ -168,7 +167,7 @@ returns a PNG, the Cloudflare Worker returns an SVG; both are
 - **CLOCKED EMPOWER** badge, top right and in the footer.
 - Agent name, race (種族, from the platform), and a hexagonal
   **Lv** badge with the level and title.
-- Composite, XP, audit confidence, and credits used.
+- Composite, XP, and audit confidence.
 - The six-axis radar and six neon dimension bars.
 - Evidence per field with verified / estimated / missing status.
 - A PROVISIONAL banner when the result rests on estimated or
@@ -294,18 +293,7 @@ The mode is shown on the page and on every audit result.
 
 Live mode was verified on 2026-11-06 with a free trial key (no card
 attached): a full audit of the demo returned Level 10 Builder,
-composite 75, for 14 credits on a re-run with header-measured credits.
-
-## Credit cost per audit
-
-Clocked charges `ceil(model_time_ms / 25)` credits per successful
-call; failed calls cost 0. Credits are read from the
-`X-Clocked-Credits` response header: measured live, one full audit
-costs about 11 to 14 credits (Protect 1-2, Guard 1-2, Extract 2-3,
-Fill 3-4, Decide 1, Verify 1-4), varying with input size and model
-time. The free trial is 4,000 credits, and the code
-`CLOCKEDHACKATHON` adds 16,000, for 20,000 total - enough for
-roughly 1,400 to 1,800 audits.
+composite 75.
 
 ## API reference
 
@@ -317,7 +305,7 @@ directly too.
 | `GET /` | The single-page app. |
 | `GET /api/mode` | Returns `{"mode": "live"}` or `{"mode": "mock"}`. |
 | `GET /api/demo` | The demo audit, always mock, statistics only. |
-| `POST /api/audit` | Runs a full audit. Body: `{"agent_name", "platform", "evidence_text", "profile"}`. Returns the audit with level, dimensions, field detail, evidence trail, and credits used. |
+| `POST /api/audit` | Runs a full audit. Body: `{"agent_name", "platform", "evidence_text", "profile"}`. Returns the audit with level, dimensions, field detail, and evidence trail. |
 | `POST /api/card` | Renders the 9:16 ability card for an audit result. Body: the audit JSON from `/api/audit` or `/api/demo`. Returns PNG (local server) or SVG (Cloudflare Worker). |
 
 ## Deployment
@@ -430,7 +418,6 @@ First public release.
 - One-URL flow for agents: paste the link, follow the on-page
   agent instructions, report the level chart back.
 - Live mode verified end to end with a free trial key (demo:
-  Level 10 Builder, composite 75, about 11 to 14 credits per
-  audit, read from the X-Clocked-Credits header).
+  Level 10 Builder, composite 75).
 - Cloudflare Worker deployment (JavaScript, dependency-free) with
   manual deploy steps in DEPLOY.md.

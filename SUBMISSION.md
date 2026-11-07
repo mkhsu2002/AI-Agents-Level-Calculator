@@ -63,11 +63,7 @@ Knowledge 81, Skill 70, Span 91, Reliability 58, Integrity 62.
 Decide returned real probabilities (autonomy domain_full 0.66,
 honesty low 0.48); Verify confirmed 10 of 11 claims against the
 source. The raw HTTP shapes the Cloudflare Worker sends were
-verified live the same day. Credits are read from the
-X-Clocked-Credits response header: a re-run of the same audit cost
-14 credits (Protect 1, Guard 1, Extract 3, Fill 4, Decide 1,
-Verify 4). An earlier 48-credit figure came from fallback
-constants, not measured values, and was corrected.
+verified live the same day.
 
 ## Team
 

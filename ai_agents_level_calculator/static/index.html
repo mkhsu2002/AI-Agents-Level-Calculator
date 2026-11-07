@@ -153,7 +153,7 @@ function showResult(a) {
   document.getElementById('levelLine').innerHTML = 'Level ' + r.level + ' - ' + r.title + ' &nbsp;<span>Composite ' + r.composite + '</span>';
   document.getElementById('metaLine').textContent =
     'Audit confidence ' + Math.round(r.audit_confidence * 100) + '% - XP ' + r.xp +
-    ' - ' + a.credits_used + ' credits used - mode: ' + a.mode +
+    ' - mode: ' + a.mode +
     (r.provisional ? ' - PROVISIONAL: rests on estimated or missing fields' : ' - all scored fields verified');
   drawRadar(r);
   const dims = document.getElementById('dims');

@@ -191,8 +191,8 @@ def render_card(audit):
 
     # Composite + stats strip.
     _text(draw, (56, 330), "綜合 %d" % result["composite"], _font(44, bold=True), CYAN)
-    stats = "XP %d   信心 %.0f%%   %d CREDITS" % (
-        result["xp"], result["audit_confidence"] * 100, audit.get("credits_used", 0))
+    stats = "XP %d   信心 %.0f%%" % (
+        result["xp"], result["audit_confidence"] * 100)
     _text(draw, (56, 392), stats, _font(28), MUTED)
     prov = ("PROVISIONAL - rests on estimated or missing fields"
             if result["provisional"] else "VERIFIED - all scored fields have evidence")
