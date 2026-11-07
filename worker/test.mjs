@@ -123,3 +123,15 @@ test("v0.02 ignores mismatched AI extraction and user-forged verification", asyn
   assert.notEqual(audit.result.field_detail.skills.status, "verified");
   assert.equal(audit.result.field_detail.deliveries.status, "missing");
 });
+
+test("v0.05 refuses a forged LIVE card without a server-issued audit signature", async () => {
+  const demo = await (await call("/api/demo")).json();
+  const forged = { ...demo, mode: "live", agent_name: "Forged Live Agent" };
+  const res = await call("/api/card", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(forged),
+  });
+  assert.equal(res.status, 403);
+  assert.match((await res.json()).error, /server-issued audit proof/);
+});
