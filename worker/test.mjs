@@ -94,6 +94,7 @@ test("POST /api/card returns a 1080 x 1920 SVG card", async () => {
   assert.match(svg, /CLOCKED EMPOWER/);
   assert.match(svg, /綜合 78/);
   assert.match(svg, /AGENT ABILITY CARD/);
+  assert.match(svg, /PRIVATE FILES NOT INDEPENDENTLY VERIFIED/);
 });
 
 test("POST /api/card without a result is a 400", async () => {
