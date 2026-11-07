@@ -60,7 +60,7 @@ test("v0.19 /agent provides one-instruction agent onboarding and MCP endpoint", 
 test("v0.20 frontend distinguishes self-reported source matching from independent verification", async () => {
   const fs = await import("node:fs/promises");
   const html = await fs.readFile(new URL("../ai_agents_level_calculator/static/index.html", import.meta.url), "utf8");
-  assert.match(html, /verified: 'source-matched \\(self-reported\\)'/);
-  assert.match(html, /const label = fieldStatusLabels\\[d.status\\]/);
-  assert.doesNotMatch(html, /class="' \\+ d.status \\+ '">' \\+ d.status/);
+  assert.ok(html.includes("verified: 'source-matched (self-reported)'"));
+  assert.ok(html.includes("const label = fieldStatusLabels[d.status]"));
+  assert.ok(!html.includes(" + d.status + '</td></tr>'"));
 });
