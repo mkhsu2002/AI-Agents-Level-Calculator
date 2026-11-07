@@ -173,9 +173,17 @@ function showResult(a) {
     dims.innerHTML += '<p>' + r.dimension_labels[i] + ' - ' + v + '</p><div class="bar"><div style="width:' + v + '%"></div></div>';
   });
   const t = document.getElementById('fieldTable');
+  // Preserve scoring status values internally; never imply that source files
+  // were independently authenticated by the Clocked grounding step.
+  const fieldStatusLabels = {
+    verified: 'source-matched (self-reported)',
+    estimated: 'estimated',
+    missing: 'missing'
+  };
   t.innerHTML = '<tr><th>Field</th><th>Value</th><th>Status</th></tr>';
   Object.entries(r.field_detail).forEach(([name, d]) => {
-    t.innerHTML += '<tr><td>' + name + '</td><td>' + (d.value === null || d.value === undefined ? '-' : d.value) + '</td><td class="' + d.status + '">' + d.status + '</td></tr>';
+    const label = fieldStatusLabels[d.status] || 'unclassified';
+    t.innerHTML += '<tr><td>' + name + '</td><td>' + (d.value === null || d.value === undefined ? '-' : d.value) + '</td><td class="' + d.status + '">' + label + '</td></tr>';
   });
   const trail = document.getElementById('trail');
   trail.innerHTML = '';
