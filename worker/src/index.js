@@ -38,7 +38,7 @@
 
 const CLOCKED_BASE = "https://clocked.rezolve.ai/clocked";
 const MAX_STATE_CHARS = 10000;
-const APP_VERSION = "v0.06";
+const APP_VERSION = "v0.07";
 
 const DIMENSIONS = [
   { key: "IDENTITY", label: "Identity" },
@@ -782,7 +782,7 @@ function renderCardSvg(audit) {
   const hexInner = hexPoints(hexCx, hexCy, hexR - 12).map(([x, yy]) => x.toFixed(1) + "," + yy.toFixed(1)).join(" ");
   const provisional = r.provisional
     ? '<text x="56" y="480" fill="#fbbf24" font-size="26" font-weight="bold">PROVISIONAL - rests on estimated or missing fields</text>'
-    : '<text x="56" y="480" fill="#4ade80" font-size="26" font-weight="bold">VERIFIED - all scored fields have evidence</text>';
+    : '<text x="56" y="480" fill="#4ade80" font-size="26" font-weight="bold">SOURCE-MATCHED - submitted evidence, not private-file proof</text>';
   const modeText = mode === "live" ? "LIVE AUDIT" : "MOCK AUDIT - DEMO ONLY";
   const modeColor = mode === "live" ? "#4ade80" : "#fbbf24";
 
@@ -820,7 +820,7 @@ function renderCardSvg(audit) {
     '<polygon points="' + poly + '" fill="none" stroke="#00f0ff" stroke-width="2"/>' + dots +
     bars + fields +
     '<text x="540" y="1830" fill="#ff2d78" font-size="28" font-weight="bold" text-anchor="middle">CLOCKED EMPOWER  //  WHAT LEVEL IS YOUR AI AGENT?</text>' +
-    '<text x="540" y="1870" fill="#8296b4" font-size="22" text-anchor="middle">Paste the AI Agents Level Calculator link to your agent and ask for its level chart.</text>' +
+    '<text x="540" y="1870" fill="#8296b4" font-size="22" text-anchor="middle">SELF-AUDITED STATISTICS - PRIVATE FILES NOT INDEPENDENTLY VERIFIED</text>' +
     "</svg>"
   );
 }
