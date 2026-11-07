@@ -149,7 +149,10 @@ test("v0.18 rejected MCP audit still emits non-sensitive failure log", async () 
     const entry = JSON.parse(entries[0]);
     assert.equal(entry.success, false);
     assert.equal(entry.request_id, body.result._meta["aalc/request_id"]);
-    assert.doesNotMatch(entries[0], /Rejected|99/);
+    // Parse metadata fields: random UUIDs can contain "99" by coincidence.
+    assert.deepEqual(Object.keys(entry).sort(), ["duration_ms", "kind", "request_id", "service", "success", "tool"].sort());
+    assert.equal(entry.tool, "run_level_audit");
+    assert.equal(entry.kind, "mcp_tool");
   } finally {
     console.info = previous;
   }
