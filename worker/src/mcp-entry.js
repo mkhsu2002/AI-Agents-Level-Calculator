@@ -3,7 +3,7 @@
 // memory, prompts, secrets, raw conversations, or file paths to this endpoint.
 import baseWorker from "./index.js";
 
-const VERSION = "2026-11-06";
+const VERSION = "v0.08";
 const PROTOCOL = "2025-03-26";
 const MAX_BYTES = 32_000;
 const FIELDS = [
@@ -136,8 +136,41 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/mcp") return handleMcp(request, env);
     if (request.method === "GET" && url.pathname === "/agent") {
-      return new Response("AI Agents Level Calculator Agent Entry\n\nMCP: /mcp\nREST audit: POST /api/audit\nRead tools/list and get_scoring_rules before submitting. Only share authorized, anonymous aggregate stats. Do not share memory contents or credentials.\n", {
-        headers: { "Content-Type": "text/plain; charset=utf-8" }
+      const guide = [
+        "# AI Agents Level Calculator: Agent Entry",
+        "",
+        "Goal: compute experience-based RPG levels from files and records the agent may actually access, NOT from generic underlying LLM ability.",
+        "",
+        "## 1. Obtain consent and inventory local evidence",
+        "Ask the user to approve any access and external submission. Read only local files already accessible within your agent platform.",
+        "Count actual supported persona, memory, domain, skill, goal, delivery and correction records.",
+        "Optional local script: tools/agent_inventory.py in https://github.com/mkhsu2002/AI-Agents-Level-Calculator .",
+        "It only counts regular files in directories explicitly supplied as arguments; one file is not necessarily one memory item or completed task.",
+        "If the platform cannot access the source, mark that field unknown. Never invent the number.",
+        "",
+        "## 2. Protect privacy",
+        "Do not send private file contents, user conversations, personal addresses, authentication tokens, passwords, system prompts or raw file paths.",
+        "Review the aggregate statistics before sending them to this external site. Clocked receives the submitted aggregate text.",
+        "",
+        "## 3. Connect",
+        "MCP Streamable HTTP endpoint: " + url.origin + "/mcp",
+        "MCP tools: get_scoring_rules, run_level_audit, get_level_card.",
+        "Clients must support configuring a remote MCP server. Reading this URL alone does not install MCP tools.",
+        "For agents without MCP use POST " + url.origin + "/api/audit with JSON {agent_name, platform, evidence_text, profile}.",
+        "",
+        "## 4. Submit only observed statistics",
+        "First call get_scoring_rules. Use evidence_text with one exact named numeric fact per line.",
+        "Example: skills: 3; goals_done: 2 (send as separate newline-delimited lines).",
+        "Do not provide a field you cannot count. The service rejects entirely empty reports.",
+        "",
+        "## 5. Read and report the result",
+        "Call run_level_audit, then get_level_card with the returned complete audit.",
+        "Report six dimensions, XP, level, mode, provisional status and evidence basis.",
+        "Self-audited source matching is not independent proof of the underlying private files.",
+        "The service does not create a permanent account or send recovery email in this release."
+      ].join("\n");
+      return new Response(guide, {
+        headers: { "Content-Type": "text/markdown; charset=utf-8", "Cache-Control": "no-store" }
       });
     }
     return baseWorker.fetch(request, env);
