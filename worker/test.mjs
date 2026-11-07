@@ -112,7 +112,7 @@ test("v0.02 ignores mismatched AI extraction and user-forged verification", asyn
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       agent_name: "Evidence Test", platform: "Other",
-      evidence_text: "persona_items: 2\\ndomains: 1\\ngoals_total: 2\\ngoals_done: 1",
+      evidence_text: "persona_items: 2\ndomains: 1\ngoals_total: 2\ngoals_done: 1",
       profile: { skills: { value: 99, status: "verified" } }
     })
   });
