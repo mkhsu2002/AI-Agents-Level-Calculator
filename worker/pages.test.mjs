@@ -64,3 +64,16 @@ test("v0.20 frontend distinguishes self-reported source matching from independen
   assert.ok(html.includes("const label = fieldStatusLabels[d.status]"));
   assert.ok(!html.includes(" + d.status + '</td></tr>'"));
 });
+
+test("v0.23 browser card download defaults to PNG and checks HTTP failures", async () => {
+  const fs = await import("node:fs/promises");
+  const html = await fs.readFile(new URL("../ai_agents_level_calculator/static/index.html", import.meta.url), "utf8");
+  assert.ok(html.includes("Download shareable 9:16 card (PNG)"));
+  assert.ok(html.includes("async function svgToPng(svgBlob)"));
+  assert.ok(html.includes("canvas.width = 1080"));
+  assert.ok(html.includes("canvas.height = 1920"));
+  assert.ok(html.includes("'image/png'"));
+  assert.ok(html.includes("if (!response.ok)"));
+  assert.ok(html.includes("Card download failed:"));
+  assert.ok(html.includes("URL.revokeObjectURL(sourceUrl)"));
+});
