@@ -671,11 +671,28 @@ function radarPoints(dimensions, order, cx, cy, radius) {
   });
 }
 
+function hexPoints(cx, cy, radius) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = -Math.PI / 2 + (2 * Math.PI * i) / 6;
+    pts.push([cx + radius * Math.cos(a), cy + radius * Math.sin(a)]);
+  }
+  return pts;
+}
+
 function renderCardSvg(audit) {
   const r = audit.result;
   const W = 1080, H = 1920;
-  const cx = 540, cy = 720, R = 300;
+  const cx = 540, cy = 850, R = 270;
   const n = r.dimension_order.length;
+  const race = String(audit.platform || "other").toUpperCase();
+  const mode = audit.mode || "mock";
+  const dimColor = {
+    IDENTITY: "#00f0ff", KNOWLEDGE: "#5eead4", SKILL: "#ffd600",
+    SPAN: "#a78bfa", RELIABILITY: "#ff2d78", INTEGRITY: "#4ade80",
+  };
+
+  // Radar grid + axes + labels.
   let grid = "";
   for (const f of [0.25, 0.5, 0.75, 1]) {
     const pts = r.dimension_order.map((_, i) => {
@@ -688,51 +705,98 @@ function renderCardSvg(audit) {
   r.dimension_order.forEach((k, i) => {
     const a = -Math.PI / 2 + (2 * Math.PI * i) / n;
     axes += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + R * Math.cos(a)).toFixed(1) + '" y2="' + (cy + R * Math.sin(a)).toFixed(1) + '" stroke="#334155" stroke-width="1"/>';
-    const lx = cx + (R + 24) * Math.cos(a);
-    const ly = cy + (R + 24) * Math.sin(a);
+    const lx = cx + (R + 46) * Math.cos(a);
+    const ly = cy + (R + 46) * Math.sin(a);
     const anchor = Math.cos(a) > 0.4 ? "start" : Math.cos(a) < -0.4 ? "end" : "middle";
-    axes += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" fill="#f0f4f8" font-size="26" font-weight="bold" text-anchor="' + anchor + '">' + escXml(r.dimension_labels[i]) + " " + r.dimensions[k] + "</text>";
+    axes += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" fill="#ebf5ff" font-size="28" font-weight="bold" text-anchor="' + anchor + '">' + escXml(r.dimension_labels[i]) + " " + r.dimensions[k] + "</text>";
   });
   const poly = radarPoints(r.dimensions, r.dimension_order, cx, cy, R).map(([x, y]) => x.toFixed(1) + "," + y.toFixed(1)).join(" ");
+  let dots = "";
+  for (const [x, y] of radarPoints(r.dimensions, r.dimension_order, cx, cy, R)) {
+    dots += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="8" fill="#00f0ff"/>';
+  }
+
+  // Neon dimension bars.
   let bars = "";
-  let y = 1110;
+  let y = 1200;
   r.dimension_order.forEach((k, i) => {
     const v = r.dimensions[k];
-    bars += '<text x="80" y="' + y + '" fill="#f0f4f8" font-size="28" font-weight="bold">' + escXml(r.dimension_labels[i]) + " - " + v + "</text>";
-    bars += '<rect x="80" y="' + (y + 12) + '" width="920" height="12" rx="6" fill="#334155"/>';
-    bars += '<rect x="80" y="' + (y + 12) + '" width="' + Math.round(920 * v / 100) + '" height="12" rx="6" fill="#5eead4"/>';
-    y += 52;
+    const color = dimColor[k] || "#00f0ff";
+    bars += '<text x="64" y="' + y + '" fill="#ebf5ff" font-size="30" font-weight="bold">' + escXml(r.dimension_labels[i]) + "</text>";
+    bars += '<text x="1016" y="' + y + '" fill="' + color + '" font-size="30" font-weight="bold" text-anchor="end">' + v + "</text>";
+    bars += '<rect x="64" y="' + (y + 12) + '" width="952" height="12" rx="6" fill="#334155"/>';
+    bars += '<rect x="64" y="' + (y + 12) + '" width="' + Math.round(952 * v / 100) + '" height="12" rx="6" fill="' + color + '"/>';
+    y += 56;
   });
+
+  // Evidence per field, two columns.
   const statusColor = { verified: "#4ade80", estimated: "#fbbf24", missing: "#f87171" };
-  let fields = "";
   const fieldEntries = Object.entries(r.field_detail || {});
-  fields += '<text x="80" y="1470" fill="#f0f4f8" font-size="28" font-weight="bold">Evidence per field</text>';
-  fieldEntries.forEach(([name, d], idx) => {
-    const col = idx < 6 ? 0 : 1;
-    const row = idx % 6;
-    const fx = col === 0 ? 80 : 560;
-    const fy = 1510 + row * 34;
+  const evidenceNames = ["persona_items", "memory_entries", "domains", "skills", "goals_done", "deliveries", "pass_rate", "honesty_disclosed", "reasoning_examples", "platforms", "goals_total", "fixes_acknowledged"];
+  let fields = "";
+  fields += '<text x="56" y="1580" fill="#00f0ff" font-size="30" font-weight="bold">// EVIDENCE</text>';
+  evidenceNames.forEach((name, idx) => {
+    const d = (r.field_detail || {})[name];
+    if (!d) return;
+    const col = idx % 2;
+    const row = Math.floor(idx / 2);
+    const fx = 64 + col * 500;
+    const fy = 1624 + row * 34;
     const val = d.value === null || d.value === undefined ? "-" : String(d.value);
-    fields += '<text x="' + fx + '" y="' + fy + '" fill="#cbd5e1" font-size="22">' + escXml(name) + ": " + escXml(val) + '</text>';
-    fields += '<text x="' + (fx + 420) + '" y="' + fy + '" fill="' + (statusColor[d.status] || "#94a3b8") + '" font-size="22" font-weight="bold" text-anchor="end">' + escXml(d.status) + "</text>";
+    fields += '<circle cx="' + (fx + 9) + '" cy="' + (fy - 7) + '" r="9" fill="' + (statusColor[d.status] || "#94a3b8") + '"/>';
+    fields += '<text x="' + (fx + 28) + '" y="' + fy + '" fill="#ebf5ff" font-size="22">' + escXml(name + ": " + val) + "</text>";
+    fields += '<text x="' + (fx + 470) + '" y="' + fy + '" fill="' + (statusColor[d.status] || "#94a3b8") + '" font-size="22" font-weight="bold" text-anchor="end">' + escXml(d.status) + "</text>";
   });
+
+  // Level hex badge.
+  const hexCx = 906, hexCy = 262, hexR = 104;
+  const hexPts = hexPoints(hexCx, hexCy, hexR).map(([x, yy]) => x.toFixed(1) + "," + yy.toFixed(1)).join(" ");
+  const hexInner = hexPoints(hexCx, hexCy, hexR - 12).map(([x, yy]) => x.toFixed(1) + "," + yy.toFixed(1)).join(" ");
   const provisional = r.provisional
-    ? '<text x="80" y="1830" fill="#fbbf24" font-size="26" font-weight="bold">PROVISIONAL - rests on estimated or missing fields</text>'
-    : '<text x="80" y="1830" fill="#4ade80" font-size="26" font-weight="bold">All scored fields verified</text>';
+    ? '<text x="56" y="480" fill="#fbbf24" font-size="26" font-weight="bold">PROVISIONAL - rests on estimated or missing fields</text>'
+    : '<text x="56" y="480" fill="#4ade80" font-size="26" font-weight="bold">VERIFIED - all scored fields have evidence</text>';
+  const modeText = mode === "live" ? "LIVE AUDIT" : "MOCK AUDIT - DEMO ONLY";
+  const modeColor = mode === "live" ? "#4ade80" : "#fbbf24";
+
   return (
     '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '">' +
-    '<rect width="' + W + '" height="' + H + '" fill="#0d1220"/>' +
-    '<text x="48" y="100" fill="#5eead4" font-size="52" font-weight="bold">AI Agents Level Calculator</text>' +
-    '<text x="48" y="200" fill="#f0f4f8" font-size="64" font-weight="bold">Level ' + r.level + " - " + escXml(r.title) + "</text>" +
-    '<text x="48" y="270" fill="#a78bfa" font-size="40" font-weight="bold">Composite ' + r.composite + " - " + escXml(audit.agent_name || "Agent") + "</text>" +
-    '<text x="48" y="320" fill="#94a3b8" font-size="26">Audit confidence ' + Math.round(r.audit_confidence * 100) + "% - XP " + r.xp + " - mode: " + escXml(audit.mode || "mock") + "</text>" +
+    '<defs>' +
+    '<pattern id="cgrid" width="96" height="96" patternUnits="userSpaceOnUse"><path d="M96 0H0V96" fill="none" stroke="#00f0ff" stroke-opacity="0.06"/></pattern>' +
+    "</defs>" +
+    '<rect width="' + W + '" height="' + H + '" fill="#05070f"/>' +
+    '<rect x="24" y="24" width="1032" height="1872" fill="url(#cgrid)"/>' +
+    '<rect x="24" y="24" width="1032" height="1872" fill="none" stroke="#00f0ff" stroke-width="3"/>' +
+    '<rect x="34" y="34" width="1012" height="1852" fill="none" stroke="#ff2d78" stroke-opacity="0.6" stroke-width="1"/>' +
+    '<polyline points="24,120 24,24 120,24" fill="none" stroke="#00f0ff" stroke-width="7"/>' +
+    '<polyline points="960,24 1056,24 1056,120" fill="none" stroke="#00f0ff" stroke-width="7"/>' +
+    '<polyline points="24,1800 24,1896 120,1896" fill="none" stroke="#00f0ff" stroke-width="7"/>' +
+    '<polyline points="960,1896 1056,1896 1056,1800" fill="none" stroke="#00f0ff" stroke-width="7"/>' +
+    '<text x="56" y="90" fill="#00f0ff" font-size="34" font-weight="bold">// AGENT ABILITY CARD</text>' +
+    '<rect x="644" y="48" width="380" height="56" rx="8" fill="#ff2d78"/>' +
+    '<polygon points="678,58 664,78 674,78 666,94 684,72 674,72" fill="#05070f"/>' +
+    '<text x="696" y="86" fill="#05070f" font-size="30" font-weight="bold">CLOCKED EMPOWER</text>' +
+    '<text x="56" y="144" fill="' + modeColor + '" font-size="26" font-weight="bold">' + modeText + "</text>" +
+    '<text x="56" y="240" fill="#ebf5ff" font-size="76" font-weight="bold">' + escXml(audit.agent_name || "Agent") + "</text>" +
+    '<text x="56" y="298" fill="#a78bfa" font-size="36" font-weight="bold">種族  ' + escXml(race) + "</text>" +
+    '<polygon points="' + hexPts + '" fill="none" stroke="#ffd600" stroke-width="4"/>' +
+    '<polygon points="' + hexInner + '" fill="none" stroke="#ffd600" stroke-opacity="0.5" stroke-width="1"/>' +
+    '<text x="' + hexCx + '" y="' + (hexCy - 28) + '" fill="#ffd600" font-size="30" font-weight="bold" text-anchor="middle">Lv</text>' +
+    '<text x="' + hexCx + '" y="' + (hexCy + 38) + '" fill="#ffd600" font-size="68" font-weight="bold" text-anchor="middle">' + r.level + "</text>" +
+    '<text x="' + hexCx + '" y="' + (hexCy + hexR + 38) + '" fill="#ebf5ff" font-size="26" font-weight="bold" text-anchor="middle">' + escXml(r.title.toUpperCase()) + "</text>" +
+    '<text x="56" y="374" fill="#00f0ff" font-size="44" font-weight="bold">綜合 ' + r.composite + "</text>" +
+    '<text x="56" y="436" fill="#8296b4" font-size="28">XP ' + r.xp + "   信心 " + Math.round(r.audit_confidence * 100) + "%   " + (audit.credits_used || 0) + " CREDITS</text>" +
+    provisional +
+    '<text x="540" y="496" fill="#ff2d78" font-size="26" font-weight="bold" text-anchor="middle">- SIX-AXIS RADAR -</text>' +
     grid + axes +
-    '<polygon points="' + poly + '" fill="rgba(94,234,212,0.35)" stroke="#5eead4" stroke-width="3"/>' +
-    bars + fields + provisional +
-    '<text x="48" y="1870" fill="#94a3b8" font-size="24">Paste the AI Agents Level Calculator link to your agent and ask for its level chart.</text>' +
+    '<polygon points="' + poly + '" fill="rgba(255,45,120,0.25)" stroke="#ff2d78" stroke-width="2"/>' +
+    '<polygon points="' + poly + '" fill="none" stroke="#00f0ff" stroke-width="2"/>' + dots +
+    bars + fields +
+    '<text x="540" y="1830" fill="#ff2d78" font-size="28" font-weight="bold" text-anchor="middle">CLOCKED EMPOWER  //  WHAT LEVEL IS YOUR AI AGENT?</text>' +
+    '<text x="540" y="1870" fill="#8296b4" font-size="22" text-anchor="middle">Paste the AI Agents Level Calculator link to your agent and ask for its level chart.</text>' +
     "</svg>"
   );
 }
+
 
 // ---------------------------------------------------------------------------
 // Worker entry point

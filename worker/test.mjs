@@ -89,9 +89,11 @@ test("POST /api/card returns a 1080 x 1920 SVG card", async () => {
   assert.match(res.headers.get("Content-Type"), /svg/);
   const svg = await res.text();
   assert.match(svg, /width="1080" height="1920"/);
-  assert.match(svg, /Level 10 - Builder/);
-  assert.match(svg, /Composite 78/);
-  assert.match(svg, /AI Agents Level Calculator/);
+  assert.match(svg, /BUILDER/);
+  assert.match(svg, /種族/);
+  assert.match(svg, /CLOCKED EMPOWER/);
+  assert.match(svg, /綜合 78/);
+  assert.match(svg, /AGENT ABILITY CARD/);
 });
 
 test("POST /api/card without a result is a 400", async () => {
