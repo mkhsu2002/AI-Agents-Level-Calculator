@@ -159,12 +159,15 @@ a small, dependency-free JavaScript port of the local Python server:
 same six dimensions, same pipeline order, same scoring formula, same
 9:16 card layout. Two deliberate differences: the Worker renders the
 card as SVG (1080 x 1920) instead of PNG, because Workers have no
-Pillow; and its Verify step makes one grounding call per claim
-instead of one call for all claims, so a live Worker audit costs the
-usual 40 to 60 credits plus about 11 credits per verified claim
-checked. A Python Worker was not used because the local server
+Pillow. A Python Worker was not used because the local server
 depends on `clocked-sdk` (httpx) and Pillow, neither of which is
 guaranteed to work on a Pyodide-based Python Worker.
+
+Live mode was verified on 2026-11-06 with a free trial key (no card
+attached): a full audit of the Fang demo returned Level 10 Builder,
+composite 75, for 48 credits. The raw HTTP shapes the Worker sends
+were verified live the same day, including the UUID Idempotency-Key
+header every call needs.
 
 Locally, the app is a Python standard-library HTTP server plus
 static files, so it also runs anywhere Python runs:

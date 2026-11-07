@@ -55,6 +55,17 @@ Live demo link to be added after the user deploys on Cloudflare
 (see DEPLOY.md). The built-in demo (agent Fang, statistics only)
 runs in mock mode from the landing page.
 
+## Live verification (2026-11-06, free trial key, no card attached)
+
+A full live audit of the Fang demo completed end to end for 48
+credits: Protect 13, Guard 2, Extract 8, Fill 13, Decide 1, Verify
+11. Result: Level 10 Builder, composite 75, dimensions Identity 86,
+Knowledge 81, Skill 70, Span 91, Reliability 58, Integrity 62.
+Decide returned real probabilities (autonomy domain_full 0.66,
+honesty low 0.48); Verify confirmed 10 of 11 claims against the
+source. The raw HTTP shapes the Cloudflare Worker sends were
+verified live the same day.
+
 ## Team
 
 M.K. (solo)

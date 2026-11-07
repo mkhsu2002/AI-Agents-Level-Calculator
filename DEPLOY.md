@@ -33,15 +33,12 @@ Two deliberate differences from the local Python server:
    Same layout, same content. The frontend downloads whichever
    format the server returns (`.svg` from the Worker, `.png`
    locally).
-2. **Verify cost.** The Worker checks each filled claim with one
-   `POST /clocked/grounding` call per claim, using the documented
-   raw shape `{ state: <claim>, sources: [<evidence>] }`. The
-   Python server uses the official SDK, which checks all claims in
-   one call. So a live Worker audit costs the same base 40 to 60
-   credits plus about 11 credits per verified claim checked (at
-   most 12 claims, so at most about 130 extra credits). Mock mode
-   costs nothing either way. If the SDK's batch grounding shape is
-   confirmed live later, the Worker can be switched to one call.
+2. **Verify cost.** The Worker checks all filled claims in one
+   batched grounding call, the same as the Python server, so a live
+   Worker audit costs the same 40 to 60 credits. (An earlier draft
+   used one grounding call per claim from the documented shape;
+   live testing on 2026-11-06 showed the batched shape works and
+   the per-claim shape does not.) Mock mode costs nothing.
 
 ## Prerequisites
 
@@ -51,9 +48,11 @@ Two deliberate differences from the local Python server:
 - Node.js 18 or newer on the machine doing the deploy.
 - A Cloudflare account. The Worker runs on the free tier.
 - A Clocked account API key. Create it in the Clocked account
-  profile. (Live mode is still unverified: the stored key returned
-  401 in local tests, so verify the live audit right after deploy
-  as described below.)
+  profile. Live mode was verified on 2026-11-06 with a free trial
+  key (no card attached): a full audit of the Fang demo returned
+  Level 10 Builder, composite 75, for 48 credits. Still verify the
+  live audit right after deploy as described below, with your own
+  key.
 
 ## Steps
 

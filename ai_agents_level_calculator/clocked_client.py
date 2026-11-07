@@ -23,6 +23,26 @@ authentication page, is the evidence for the Bearer header: the docs
 page names X-CLOCKED-KEY, but the SDK sends Bearer and the docs
 header was rejected in live tests on 2026-11-06.
 
+Live request shapes, verified against the real API on 2026-11-06
+(free trial key, no card attached; failed calls cost 0 credits):
+- Decide: questions is a mapping name -> {type: "choice", target,
+  options, criteria, fallback}; criteria is a mapping of at least
+  two options to descriptions, not a list. Answers carry choice,
+  probabilities, and confidence.
+- Extract and Fill: both return a "fields" mapping, not "answers".
+  Each field has value (string), start/end char positions,
+  confidence, and p_verify; Fill with type "extract" also returns
+  a typed "number". Fill fields need a "type": number and text
+  fields use "extract", boolean fields use "yes_no".
+- Grounding: needs documents, claims, AND a non-empty "answer"
+  string (the joined claims work). Each claim returns verdict
+  "supported" / contradicted / not stated, plus a supported score.
+- PII: the response carries no redacted text, only "entities" with
+  type, value, start, end, and confidence. Redaction is done here
+  from those spans.
+- Injection: verdicts are "benign" for safe input, "risky" style
+  verdicts otherwise; risk is "low" / "high".
+
 Credit model, from the official docs: cost is ceil(model_time_ms / 25)
 per successful call, failed calls cost 0. Measured averages are about
 1 credit for Decide, 8 for Extract, 13 for Fill, about 13 for Protect.
@@ -67,6 +87,68 @@ def _credits_from_usage(result, endpoint):
     return MOCK_CREDITS.get(endpoint, 1)
 
 
+def _coerce_value(field):
+    """Turn a live field entry into a typed value.
+
+    The API returns value as a string, plus a typed "number" for
+    numeric fields. Boolean yes_no answers come back as true/false
+    or "yes"/"no" strings.
+    """
+    if "number" in field and isinstance(field["number"], (int, float)):
+        return field["number"]
+    value = field.get("value")
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in ("true", "yes"):
+            return True
+        if lowered in ("false", "no"):
+            return False
+        try:
+            number = float(value.strip())
+            return int(number) if number.is_integer() else number
+        except (TypeError, ValueError):
+            return value
+    return value
+
+
+def _parse_fields_result(text, fields):
+    """Turn a live Extract/Fill "fields" mapping into answers + missing.
+
+    answers: name -> {value, confidence, sources[{quote, start_char, end_char}]}.
+    A field with no value counts as missing, never invented.
+    """
+    answers = {}
+    missing = []
+    for name, field in (fields or {}).items():
+        if not isinstance(field, dict):
+            continue
+        value = _coerce_value(field)
+        if value is None:
+            missing.append({"name": name, "reason": "not established"})
+            continue
+        start, end = field.get("start"), field.get("end")
+        sources = []
+        if isinstance(start, int) and isinstance(end, int) and 0 <= start < end <= len(text):
+            line_start = text.rfind("\n", 0, start) + 1
+            line_end = text.find("\n", end)
+            line_end = len(text) if line_end == -1 else line_end
+            sources.append({
+                "quote": text[line_start:line_end].strip(),
+                "start_char": line_start,
+                "end_char": line_end,
+            })
+        answers[name] = {
+            "value": value,
+            "confidence": float(field.get("confidence") or 0.0),
+            "sources": sources,
+        }
+    return answers, missing
+
+
 class ClockedClient:
     """One client for both modes. mode is 'live' or 'mock'."""
 
@@ -87,9 +169,21 @@ class ClockedClient:
         if self.mode == "mock":
             return self._mock_pii(text)
         result = dict(self._sdk.pii(text=text))
+        entities = result.get("entities") or []
+        # The API returns entity spans, not redacted text, so redact here.
+        findings = []
+        spans = []
+        for ent in entities:
+            start, end = ent.get("start"), ent.get("end")
+            if isinstance(start, int) and isinstance(end, int) and start < end:
+                findings.append({"type": ent.get("type"), "start": start, "end": end})
+                spans.append((start, end, ent.get("type", "pii")))
+        redacted = text
+        for start, end, kind in sorted(spans, reverse=True):
+            redacted = redacted[:start] + "[REDACTED:%s]" % str(kind).upper() + redacted[end:]
         return {
-            "redacted_text": result.get("redacted_text") or result.get("redacted") or text,
-            "findings": result.get("findings", []),
+            "redacted_text": redacted,
+            "findings": findings,
             "credits": _credits_from_usage(result, "pii"),
             "raw": result,
         }
@@ -115,12 +209,15 @@ class ClockedClient:
         if self.mode == "mock":
             return self._mock_injection(text)
         result = dict(self._sdk.injection(text=text))
-        verdict = result.get("verdict") or result.get("decision") or {}
-        if isinstance(verdict, dict):
-            risk = verdict.get("risk", "low")
-            label = verdict.get("verdict", "safe")
-        else:
-            risk, label = "low", str(verdict)
+        label = result.get("verdict") or result.get("decision") or "safe"
+        risk = result.get("risk", "low")
+        if isinstance(label, dict):
+            risk = label.get("risk", risk)
+            label = label.get("verdict", "safe")
+        label = str(label)
+        # The live API says "benign" for safe input; normalise it.
+        if label == "benign":
+            label = "safe"
         return {
             "verdict": label,
             "risk": risk,
@@ -144,9 +241,10 @@ class ClockedClient:
             return self._mock_extract(text, fields)
         sdk_fields = {name: {"target": target} for name, target in fields.items()}
         result = dict(self._sdk.extract(text=text, fields=sdk_fields))
+        answers, missing = _parse_fields_result(text, result.get("fields") or {})
         return {
-            "answers": result.get("answers", {}),
-            "missing": result.get("missing", []),
+            "answers": answers,
+            "missing": missing,
             "unsupported": result.get("unsupported", []),
             "credits": _credits_from_usage(result, "extract"),
             "raw": result,
@@ -189,16 +287,20 @@ class ClockedClient:
             return self._mock_fill(text, spec_fields)
         sdk_fields = {}
         for f in spec_fields:
-            entry = {"kind": f["kind"]}
+            # Live Fill fields need a "type": number and text fields
+            # are "extract", boolean fields are "yes_no".
+            kind = f["kind"]
+            entry = {"type": "yes_no" if kind == "boolean" else "extract"}
             if f.get("kind_hint"):
                 entry["kind_hint"] = f["kind_hint"]
             if f.get("options"):
                 entry["options"] = f["options"]
             sdk_fields[f["name"]] = entry
         result = dict(self._sdk.fill(text=text, fields=sdk_fields))
+        answers, missing = _parse_fields_result(text, result.get("fields") or {})
         return {
-            "values": result.get("values", {}),
-            "missing": result.get("missing", []),
+            "values": answers,
+            "missing": missing,
             "unsupported": result.get("unsupported", []),
             "credits": _credits_from_usage(result, "fill"),
             "raw": result,
@@ -215,7 +317,11 @@ class ClockedClient:
 
     # -- Decide ---------------------------------------------------------
     def decide(self, state, questions):
-        """questions: dict of name -> {target, options, criteria, fallback}."""
+        """questions: dict of name -> {type, target, options, criteria, fallback}.
+
+        Live Decide requires type "choice" and criteria as a mapping
+        of at least two options to descriptions, not a list.
+        """
         if self.mode == "mock":
             return self._mock_decide(state, questions)
         result = dict(self._sdk.decide(state=state, questions=questions))
@@ -246,9 +352,29 @@ class ClockedClient:
     def grounding(self, documents, claims):
         if self.mode == "mock":
             return self._mock_grounding(documents, claims)
-        result = dict(self._sdk.grounding(documents=documents, claims=claims))
+        # Live grounding requires a non-empty "answer" string as well
+        # as documents and claims; the joined claims serve as it.
+        answer = "; ".join(claims)
+        result = dict(self._sdk.grounding(documents=documents, claims=claims, answer=answer))
+        answers = {}
+        for item in result.get("claims") or []:
+            claim = item.get("claim")
+            if not claim:
+                continue
+            verdict = str(item.get("verdict", "")).lower()
+            if verdict == "supported":
+                label = "true"
+            elif verdict in ("contradicted", "refuted"):
+                label = "false"
+            else:
+                label = "unsupported"
+            answers[claim] = {
+                "label": label,
+                "confidence": float(item.get("supported") or 0.0),
+                "explanation": "Clocked verdict: %s (supported %.2f)." % (verdict, float(item.get("supported") or 0.0)),
+            }
         return {
-            "answers": result.get("answers", result.get("claims", {})),
+            "answers": answers,
             "credits": _credits_from_usage(result, "grounding"),
             "raw": result,
         }
