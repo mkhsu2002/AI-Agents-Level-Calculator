@@ -67,6 +67,19 @@ class TestPipeline(unittest.TestCase):
         protect = [s for s in audit["evidence_trail"] if s["step"] == "protect"][0]
         self.assertEqual(protect["findings"], 1)
 
+    def test_source_matching_prevents_cross_field_xp_spoof(self):
+        audit = run_audit(
+            "Provenance Test", "other",
+            "domains: 1\\ngoals_total: 2\\ngoals_done: 1",
+            {"skills": {"value": 1000, "status": "verified"}},
+            client=self.client,
+        )
+        result = audit["result"]
+        self.assertEqual(result["field_detail"]["goals_done"]["value"], 1)
+        self.assertEqual(result["field_detail"]["goals_done"]["sources"][0]["quote"], "goals_done: 1")
+        self.assertEqual(result["field_detail"]["skills"]["status"], "estimated")
+        self.assertEqual(result["xp"], 120)
+
     def test_empty_evidence_scores_zero(self):
         audit = run_audit("Nobody", "other", "", client=self.client)
         self.assertEqual(audit["status"], "complete")
