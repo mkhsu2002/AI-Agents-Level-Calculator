@@ -121,6 +121,7 @@ test("v0.02 ignores mismatched AI extraction and user-forged verification", asyn
   assert.equal(audit.result.field_detail.goals_done.sources[0].quote, "goals_done: 1");
   assert.equal(audit.result.field_detail.skills.status, "estimated");
   assert.equal(audit.result.field_detail.skills.value, 99);
+  assert.equal(audit.result.xp, 120); // 99 estimated skills must not inflate XP
   assert.notEqual(audit.result.field_detail.skills.status, "verified");
   assert.equal(audit.result.field_detail.deliveries.status, "missing");
 });
