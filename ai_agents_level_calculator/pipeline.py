@@ -16,6 +16,8 @@ The pipeline never scores raw user text directly. Every number that
 reaches the formula carries a status and, when verified, a source.
 """
 
+import re
+
 from .clocked_client import ClockedClient
 from .config import MAX_STATE_CHARS, PROFILE_FIELDS
 from .scoring import score
@@ -42,11 +44,26 @@ def _normalise_fields(raw_fields):
         elif isinstance(entry, dict):
             fields[name] = {
                 "value": entry.get("value"),
-                "status": entry.get("status", "estimated"),
+                "status": "estimated",  # clients cannot grant their own verified status
             }
         else:
             fields[name] = {"value": entry, "status": "estimated"}
     return fields
+
+
+def _exact_evidence_value(text, name):
+    """Match numeric/boolean evidence only on the correct named source line."""
+    pattern = re.compile(r"^([a-z_]+)\\s*:\\s*(true|false|\\d+(?:\\.\\d+)?)\\s*$", re.I)
+    for line in text.splitlines():
+        m = pattern.fullmatch(line.strip())
+        if not m or m.group(1) != name:
+            continue
+        raw = m.group(2).lower()
+        value = (raw == "true") if raw in ("true", "false") else float(raw)
+        if isinstance(value, float) and value.is_integer():
+            value = int(value)
+        return {"value": value, "sources": [{"quote": line.strip()}]}
+    return None
 
 
 def run_audit(agent_name, platform, evidence_text, raw_fields=None, client=None):
@@ -120,16 +137,21 @@ def run_audit(agent_name, platform, evidence_text, raw_fields=None, client=None)
     })
 
     fields = _normalise_fields(raw_fields)
-    for name, answer in (filled.get("values") or {}).items():
-        if name in fields:
-            fields[name] = {"value": answer.get("value"), "status": "verified",
-                            "confidence": answer.get("confidence"),
-                            "sources": answer.get("sources", [])}
-    for name, answer in (extracted.get("answers") or {}).items():
-        if name in fields and fields[name].get("status") != "verified":
-            fields[name] = {"value": answer.get("value"), "status": "verified",
-                            "confidence": answer.get("confidence"),
-                            "sources": answer.get("sources", [])}
+    for spec in PROFILE_FIELDS:
+        name = spec["name"]
+        matched = _exact_evidence_value(safe_text, name)
+        if matched is None:
+            continue
+        # Clocked still extracts / classifies / grounds, but cannot assign a
+        # count to a different field merely because a number appears nearby.
+        answer = (filled.get("values") or {}).get(name) or (extracted.get("answers") or {}).get(name) or {}
+        fields[name] = {
+            "value": matched["value"],
+            "status": "verified",
+            "confidence": answer.get("confidence", 1),
+            "sources": matched["sources"],
+            "source_method": "exact_named_line",
+        }
 
     # Step 4: Decide autonomy tier and honesty grade.
     decided = client.decide(
@@ -231,6 +253,7 @@ def run_audit(agent_name, platform, evidence_text, raw_fields=None, client=None)
             "confidence": entry.get("confidence"),
             "verification": entry.get("verification"),
             "sources": entry.get("sources", []),
+            "source_method": entry.get("source_method"),
         }
         for name, entry in fields.items()
     }
