@@ -53,7 +53,7 @@ class TestDimensions(unittest.TestCase):
         verified = score(fields(**full))
         estimated = score(fields(**estimated_full))
         self.assertEqual(verified["xp"], 100 * 8 + 80 * 10 + 40 * 20 + 25 * 100)
-        self.assertEqual(estimated["xp"], verified["xp"] // 2)
+        self.assertEqual(estimated["xp"], 0)  # unsupported estimates cannot create XP
         self.assertTrue(estimated["provisional"])
         self.assertFalse(verified["provisional"])
         self.assertEqual(verified["audit_confidence"], 1.0)
