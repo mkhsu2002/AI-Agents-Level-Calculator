@@ -104,3 +104,22 @@ test("POST /api/card without a result is a 400", async () => {
   });
   assert.equal(res.status, 400);
 });
+
+test("v0.02 ignores mismatched AI extraction and user-forged verification", async () => {
+  const res = await call("/api/audit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      agent_name: "Evidence Test", platform: "Other",
+      evidence_text: "persona_items: 2\\ndomains: 1\\ngoals_total: 2\\ngoals_done: 1",
+      profile: { skills: { value: 99, status: "verified" } }
+    })
+  });
+  const audit = await res.json();
+  assert.equal(audit.result.field_detail.goals_done.value, 1);
+  assert.equal(audit.result.field_detail.goals_done.sources[0].quote, "goals_done: 1");
+  assert.equal(audit.result.field_detail.skills.status, "estimated");
+  assert.equal(audit.result.field_detail.skills.value, 99);
+  assert.notEqual(audit.result.field_detail.skills.status, "verified");
+  assert.equal(audit.result.field_detail.deliveries.status, "missing");
+});
