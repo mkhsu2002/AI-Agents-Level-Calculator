@@ -1,8 +1,11 @@
 // Zero-credit production smoke test. No Clocked audit is run.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 const base = process.env.AALC_BASE_URL || "https://aalc.flypigai.ca";
-const expected = process.env.AALC_EXPECT_VERSION || "v0.09";
+const localSource = readFileSync(new URL("../worker/src/index.js", import.meta.url), "utf8");
+const expected = process.env.AALC_EXPECT_VERSION || localSource.match(/const APP_VERSION = "([^"]+)"/)?.[1];
+if (!expected) throw new Error("Cannot determine expected version.");
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 async function api(path, init) {
