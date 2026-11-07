@@ -3,7 +3,7 @@
 // memory, prompts, secrets, raw conversations, or file paths to this endpoint.
 import baseWorker from "./index.js";
 
-const VERSION = "v0.17";
+const VERSION = "v0.18";
 const PROTOCOL = "2025-03-26";
 const MAX_BYTES = 32_000;
 const FIELDS = [
@@ -73,6 +73,11 @@ function rules() {
     submission_format_example: "persona_items: 7\nmemory_entries: 50\ndomains: 10\nskills: 5\nreasoning_examples: 4\nplatforms: 4\ngoals_total: 38\ngoals_done: 18\ndeliveries: 100\nfixes_acknowledged: 4"
   };
 }
+// Emit metadata-only operational events. Cloudflare log retention depends on the
+// deployment's observability settings. Never log evidence, profiles or card SVG.
+function logToolEvent(event) {
+  console.info(JSON.stringify({ service: "aalc", kind: "mcp_tool", ...event }));
+}
 async function callTool(name, args, env, request) {
   if (name === "get_scoring_rules") return toolText(rules());
   if (name === "run_level_audit") {
@@ -125,8 +130,26 @@ export async function handleMcp(request, env) {
     const name = message.params?.name;
     const args = message.params?.arguments || {};
     if (!TOOLS.some(t => t.name === name)) return error(id, -32602, "Unknown tool.");
-    try { return rpc(id, await callTool(name, args, env, request)); }
-    catch (e) { return rpc(id, { content: [{ type: "text", text: "Audit service error: " + String(e?.message || e) }], isError: true }); }
+    const requestId = crypto.randomUUID();
+    const started = Date.now();
+    try {
+      const output = await callTool(name, args, env, request);
+      const isError = output.isError === true;
+      // Return the ID in MCP metadata without changing the signed audit payload.
+      output._meta = { ...(output._meta || {}), "aalc/request_id": requestId };
+      if (name === "run_level_audit" || name === "get_level_card") {
+        logToolEvent({ request_id: requestId, tool: name, success: !isError,
+          duration_ms: Date.now() - started });
+      }
+      const response = rpc(id, output);
+      response.headers.set("X-AALC-Request-ID", requestId);
+      return response;
+    } catch (e) {
+      logToolEvent({ request_id: requestId, tool: name, success: false,
+        duration_ms: Date.now() - started, error_code: "UNHANDLED" });
+      return rpc(id, { content: [{ type: "text", text: "Audit service error. Reference: " + requestId }], isError: true,
+        _meta: { "aalc/request_id": requestId } });
+    }
   }
   return error(id, -32601, "Method not found.");
 }
@@ -167,6 +190,7 @@ export default {
         "Call run_level_audit, then get_level_card with the returned complete audit.",
         "Report six dimensions, XP, level, mode, provisional status and evidence basis.",
         "Self-audited source matching is not independent proof of the underlying private files.",
+        "Every MCP audit or card call returns a tracking ID in _meta (aalc/request_id). Share that ID if the test fails; do not share private evidence.",
         "The service does not create a permanent account or send recovery email in this release."
       ].join("\n");
       return new Response(guide, {
