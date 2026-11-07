@@ -70,7 +70,7 @@ class TestPipeline(unittest.TestCase):
     def test_source_matching_prevents_cross_field_xp_spoof(self):
         audit = run_audit(
             "Provenance Test", "other",
-            "domains: 1\\ngoals_total: 2\\ngoals_done: 1",
+            "domains: 1\ngoals_total: 2\ngoals_done: 1",
             {"skills": {"value": 1000, "status": "verified"}},
             client=self.client,
         )
