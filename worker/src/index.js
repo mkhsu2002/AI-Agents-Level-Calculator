@@ -38,7 +38,7 @@
 
 const CLOCKED_BASE = "https://clocked.rezolve.ai/clocked";
 const MAX_STATE_CHARS = 10000;
-const APP_VERSION = "v0.15";
+const APP_VERSION = "v0.16";
 
 const DIMENSIONS = [
   { key: "IDENTITY", label: "Identity" },
@@ -909,6 +909,11 @@ function validateLiveAggregates(evidenceText, profile) {
     const value = rawValue === "true" ? true : rawValue === "false" ? false : Number(rawValue);
     const error = validateValue(name, value);
     if (error) return error;
+  }
+  // Profile-only values are not source evidence. Never spend Clocked credits
+  // analyzing an empty document, even when estimates were supplied.
+  if (seen.size === 0) {
+    return "Live audit requires at least one aggregate evidence line; profile-only estimates are not sufficient.";
   }
   if (profile !== null && profile !== undefined) {
     if (typeof profile !== "object" || Array.isArray(profile)) return "Profile must be a JSON object of aggregates.";

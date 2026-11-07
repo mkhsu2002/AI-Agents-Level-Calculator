@@ -139,6 +139,29 @@ test("v0.05 refuses a forged LIVE card without a server-issued audit signature",
 });
 
 
+test("v0.16 Live rejects profile-only estimates without a billable Clocked call", async () => {
+  const liveEnv = { ...ENV, CLOCKED_API_KEY: "synthetic-test-only" };
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => { calls += 1; throw new Error("Clocked must not be contacted"); };
+  try {
+    for (const evidence_text of ["", "\\n  \\n"]) {
+      const res = await worker.fetch(new Request("https://example.com/api/audit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agent_name: "Synthetic Test", platform: "Other",
+          evidence_text, profile: { skills: 8, honesty_disclosed: true }
+        })
+      }), liveEnv);
+      assert.equal(res.status, 400);
+      assert.match((await res.json()).error, /aggregate evidence line/i);
+    }
+    assert.equal(calls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("v0.15 Live API rejects non-aggregate and unbounded input before any Clocked call", async () => {
   const liveEnv = { ...ENV, CLOCKED_API_KEY: "synthetic-test-only" };
   const cases = [

@@ -63,6 +63,14 @@ const badAudit = await api("/api/audit", { method: "POST", body: JSON.stringify(
 assert.equal(badAudit.status, 400);
 console.log("PASS empty evidence rejected without Clocked calls");
 
+const profileOnly = await api("/api/audit", { method: "POST", body: JSON.stringify({
+  agent_name: "Synthetic Smoke", platform: "Other",
+  evidence_text: "", profile: { skills: 3 }
+}) });
+assert.equal(profileOnly.status, 400);
+assert.match(profileOnly.data.error, /aggregate evidence line/i);
+console.log("PASS profile-only estimates rejected before any billable Clocked calls");
+
 const unsafe = await api("/api/audit", { method: "POST", body: JSON.stringify({
   agent_name: "Synthetic Smoke", platform: "Other",
   evidence_text: "skills: 3\nraw private notes", profile: {}

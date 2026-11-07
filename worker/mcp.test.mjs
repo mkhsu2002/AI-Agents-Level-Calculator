@@ -84,3 +84,25 @@ test("v0.15 MCP Live audit shares aggregate-only preflight", async () => {
     globalThis.fetch = originalFetch;
   }
 });
+
+test("v0.16 MCP Live rejects profile-only submissions without Clocked calls", async () => {
+  const liveEnv = { ...env, CLOCKED_API_KEY: "synthetic-test-only" };
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => { calls += 1; throw new Error("Clocked must not be contacted"); };
+  try {
+    const { body } = await rpc("tools/call", {
+      name: "run_level_audit",
+      arguments: {
+        agent_name: "Privacy test", platform: "Other",
+        evidence_text: "", profile: { skills: 3 }
+      }
+    }, liveEnv);
+    assert.equal(body.result.isError, true);
+    assert.match(body.result.content[0].text, /aggregate evidence line/i);
+    assert.equal(calls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
