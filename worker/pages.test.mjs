@@ -44,3 +44,15 @@ test("Pages adapter uses static asset binding for static fallback", async () => 
   assert.equal(response.status, 200);
   assert.equal(await response.text(), "pages-static-assets");
 });
+
+test("v0.19 /agent provides one-instruction agent onboarding and MCP endpoint", async () => {
+  const response = await handle("/agent");
+  assert.equal(response.status, 200);
+  const guide = await response.text();
+  assert.match(guide, /ONE-INSTRUCTION START:/);
+  assert.match(guide, /only genuine, authorized local record counts/);
+  assert.match(guide, /\/mcp/);
+  assert.match(guide, /one Live audit/);
+  assert.match(guide, /request ID/);
+  assert.match(guide, /Never send private contents or invent records/);
+});
