@@ -53,7 +53,7 @@ def _normalise_fields(raw_fields):
 
 def _exact_evidence_value(text, name):
     """Match numeric/boolean evidence only on the correct named source line."""
-    pattern = re.compile(r"^([a-z_]+)\\s*:\\s*(true|false|\\d+(?:\\.\\d+)?)\\s*$", re.I)
+    pattern = re.compile(r"^([a-z_]+)\s*:\s*(true|false|\d+(?:\.\d+)?)\s*$", re.I)
     for line in text.splitlines():
         m = pattern.fullmatch(line.strip())
         if not m or m.group(1) != name:
