@@ -47,7 +47,7 @@
     <ol>
       <li><b>Paste or upload evidence</b> about your agent: a persona file, memory or notes, skill files, a goals list, a delivery log, or a generic JSON profile. Any agent platform works: Muse, ChatGPT, Claude, Gemini, or other.</li>
       <li><b>Press Run audit.</b> The server screens the text for personal data and injected instructions, then Clocked Extract pulls evidence with source quotes, Fill builds your profile, Decide grades autonomy and honesty, and Verify checks each claim against your source text.</li>
-      <li><b>Get your level chart.</b> Six dimensions - Identity, Knowledge, Skill, Span, Reliability, Integrity - averaged into one composite score and level. Only verified fields count in full; estimated fields count at half weight; missing fields are shown as missing, never silently scored as zero. Download the 9:16 card (1080 x 1920) and share it.</li>
+      <li><b>Get your level chart.</b> Six dimensions - Identity, Knowledge, Skill, Span, Reliability, Integrity - averaged into one composite score and level. Only source-matched submitted fields count in full; estimated fields count at half weight; missing fields are shown as missing. Source matching does not independently verify private agent files. Download the 9:16 card (1080 x 1920) and share it.</li>
     </ol>
     <p class="small">Statistics only, please: counts and grades, never passwords, API keys, or full conversation text. Personal data is redacted before scoring.</p>
   </div>
@@ -167,7 +167,7 @@ function showResult(a) {
   document.getElementById('metaLine').textContent =
     'Audit confidence ' + Math.round(r.audit_confidence * 100) + '% - XP ' + r.xp +
     ' - mode: ' + a.mode +
-    (r.provisional ? ' - PROVISIONAL: rests on estimated or missing fields' : ' - all scored fields verified');
+    (r.provisional ? ' - PROVISIONAL: rests on estimated or missing fields' : ' - submitted source fields matched (private files not independently verified)');
   drawRadar(r);
   const dims = document.getElementById('dims');
   dims.innerHTML = '';
