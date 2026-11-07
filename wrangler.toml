@@ -11,7 +11,7 @@
 # Without the secret the Worker runs in mock mode and says so.
 
 name = "ai-agents-level-calculator"
-main = "worker/src/index.js"
+main = "worker/src/mcp-entry.js"
 compatibility_date = "2026-11-06"
 
 [assets]
