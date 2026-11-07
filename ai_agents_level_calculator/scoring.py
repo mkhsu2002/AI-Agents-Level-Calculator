@@ -37,8 +37,8 @@ Six dimensions, locked by the user on 2026-11-06. Each returns 0 to 100:
 
 Composite is the mean of all six dimension scores, rounded to an
 integer. XP = 100 * skills + 80 * domains + 40 * goals_done
-+ 25 * deliveries, with estimated fields at half value and missing
-fields at zero. Level L requires 50 * L * (L - 1) XP.
++ 25 * deliveries, with estimated and missing fields excluded from XP; only source-matched verified
+fields contribute. Dimension scores still half-weight estimates. Level L requires 50 * L * (L - 1) XP.
 Audit confidence is the mean field weight over all profile fields
 (verified 1.0, estimated 0.5, missing 0), as a share from 0 to 1.
 """
@@ -69,6 +69,17 @@ def _num(fields, name):
     value, weight, _status = _field(fields, name)
     try:
         return float(value) * weight
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _xp_num(fields, name):
+    """Only source-matched verified counts earn experience points."""
+    value, _weight, status = _field(fields, name)
+    if status != "verified":
+        return 0.0
+    try:
+        return max(0.0, float(value))
     except (TypeError, ValueError):
         return 0.0
 
@@ -177,10 +188,10 @@ def score(fields, integrity=None):
     composite = round(sum(dimensions.values()) / len(dimensions)) if dimensions else 0
 
     xp = (
-        100 * _num(fields, "skills")
-        + 80 * _num(fields, "domains")
-        + 40 * _num(fields, "goals_done")
-        + 25 * _num(fields, "deliveries")
+        100 * _xp_num(fields, "skills")
+        + 80 * _xp_num(fields, "domains")
+        + 40 * _xp_num(fields, "goals_done")
+        + 25 * _xp_num(fields, "deliveries")
     )
     xp = int(round(xp))
     level = level_for_xp(xp)
