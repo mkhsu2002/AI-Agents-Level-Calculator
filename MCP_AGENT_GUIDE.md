@@ -50,3 +50,15 @@ Example JSON-RPC requests (`Content-Type: application/json`):
 ## Production hardening
 
 This branch is an integration prototype, not an open public commercial API. Before exposing a credit-consuming Clocked endpoint broadly, add authentication / quotas / rate limiting; request-size and output limits; controlled retention and consent; and full live SDK integration tests. MCP protocol clients can vary in how they negotiate transports and MIME types, so check with the actual intended Muse or Dot client before public launch.
+
+## Optional local metadata inventory
+
+For agents with permitted local filesystem access, the opt-in scanner counts regular files in explicitly supplied category directories. It does not read file contents, follow symlinks, or upload anything:
+
+```sh
+python3 tools/agent_inventory.py --memory-dir /path/to/authorized/memory --skills-dir /path/to/authorized/skills
+```
+
+Review the printed JSON before giving the `evidence_text` to `run_level_audit`. Each file counts as one entry in its chosen category; do not call a file count a validated memory-item or completed-task count unless the directory really contains one record per file. Omit categories for which that relationship is unknown.
+
+To test the scanner: `python3 -m unittest tests.test_agent_inventory -v`.
