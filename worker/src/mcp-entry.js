@@ -3,7 +3,7 @@
 // memory, prompts, secrets, raw conversations, or file paths to this endpoint.
 import baseWorker from "./index.js";
 
-const VERSION = "v0.20";
+const VERSION = "v0.21";
 const PROTOCOL = "2025-03-26";
 const MAX_BYTES = 32_000;
 const FIELDS = [
@@ -32,7 +32,7 @@ const TOOLS = [
   },
   {
     name: "get_level_card",
-    description: "Render a previously generated audit result as a 1080x1920 SVG image, returned as a base64 MCP resource.",
+    description: "Render the exact signed audit returned by run_level_audit as a 1080x1920 SVG image. Do not add, remove, or modify any audit fields before requesting a card.",
     inputSchema: {
       type: "object", required: ["audit"], additionalProperties: false,
       properties: { audit: { type: "object", description: "Complete JSON audit response from run_level_audit" } }
@@ -90,7 +90,10 @@ async function callTool(name, args, env, request) {
     }), env);
     const payload = await result.json();
     if (!result.ok) return { content: [{ type: "text", text: JSON.stringify(payload) }], isError: true };
-    return toolText({ ...payload, evidence_basis: "self-audited; counts are not independently validated" });
+    // A Live audit is HMAC-signed over the complete serialized payload. Do not
+    // append metadata inside the signed audit or /api/card will reject it.
+    // The provenance disclaimer is already rendered on the card and in rules.
+    return toolText(payload);
   }
   if (name === "get_level_card") {
     if (!args || !args.audit || typeof args.audit !== "object" || !args.audit.result) {
@@ -189,7 +192,7 @@ export default {
         "Do not provide a field you cannot count. The service rejects entirely empty reports.",
         "",
         "## 5. Read and report the result",
-        "Call run_level_audit, then get_level_card with the returned complete audit.",
+        "Call run_level_audit, then get_level_card with the exact returned signed audit JSON: do not append, remove or edit any fields.",
         "Report six dimensions, XP, level, mode, provisional status and evidence basis.",
         "Self-audited source matching is not independent proof of the underlying private files.",
         "Every MCP audit or card call returns a tracking ID in _meta (aalc/request_id). Share that ID if the test fails; do not share private evidence.",
