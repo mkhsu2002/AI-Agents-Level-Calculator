@@ -45,11 +45,11 @@
   <div class="card">
     <h2>How it works, in one screen</h2>
     <ol>
-      <li><b>Paste or upload evidence</b> about your agent: a persona file, memory or notes, skill files, a goals list, a delivery log, or a generic JSON profile. Any agent platform works: Muse, ChatGPT, Claude, Gemini, or other.</li>
+      <li><b>Count local records, not private files.</b> With permission, inspect metadata of accessible persona, memory, skill, goal and delivery records. Paste only aggregate numbers or import a locally generated metadata-only inventory JSON. Any agent platform works.</li>
       <li><b>Press Run audit.</b> The server screens the text for personal data and injected instructions, then Clocked Extract pulls evidence with source quotes, Fill builds your profile, Decide grades autonomy and honesty, and Verify checks each claim against your source text.</li>
       <li><b>Get your level chart.</b> Six dimensions - Identity, Knowledge, Skill, Span, Reliability, Integrity - averaged into one composite score and level. Only source-matched submitted fields count in full; estimated fields count at half weight; missing fields are shown as missing. Source matching does not independently verify private agent files. Download the 9:16 card (1080 x 1920) and share it.</li>
     </ol>
-    <p class="small">Statistics only, please: counts and grades, never passwords, API keys, or full conversation text. Personal data is redacted before scoring.</p>
+    <p class="small">Submit counts and grades only. Never send private file contents, system prompts, API keys, or conversations. Server-side redaction cannot guarantee secret removal.</p>
   </div>
 
   <div class="card">
@@ -79,8 +79,9 @@ domains: 10
 skills: 5
 goals_done: 18
 deliveries: 100"></textarea>
-    <label for="files">Or upload evidence files (.md, .txt, .json)</label>
-    <input type="file" id="files" multiple accept=".md,.txt,.json">
+    <label for="files">Or import metadata-only inventory JSON (tools/agent_inventory.py)</label>
+    <input type="file" id="files" accept=".json,application/json">
+    <p class="small">Only whitelisted aggregate counts are copied into Evidence; your JSON file is never uploaded. Review before Run audit.</p>
     <label for="profile">Optional generic JSON profile (numbers you supply without source text are estimated)</label>
     <textarea id="profile" placeholder='{"pass_rate": 0.8, "honesty_disclosed": true}'></textarea>
     <br>
@@ -98,7 +99,7 @@ deliveries: 100"></textarea>
     <table id="fieldTable"><tr><th>Field</th><th>Value</th><th>Status</th></tr></table>
     <h3>Evidence trail</h3>
     <ol id="trail"></ol>
-    <button class="secondary" onclick="downloadCard()">Download 9:16 card (PNG)</button>
+    <button class="secondary" onclick="downloadCard()">Download 9:16 card (SVG/PNG)</button>
     <button class="secondary" onclick="copyShare()">Copy share text</button>
     <p class="small" id="shareLine"></p>
   </div>
@@ -118,10 +119,6 @@ refreshMode();
 function copyAgentBlock() {
   navigator.clipboard.writeText(document.getElementById('agentBlock').innerText);
 }
-document.getElementById('files').addEventListener('change', async (e) => {
-  const box = document.getElementById('evidence');
-  for (const f of e.target.files) { box.value += '\n' + await f.text(); }
-});
 async function loadDemo() {
   const r = await fetch('/api/demo');
   lastAudit = await r.json();
@@ -230,6 +227,26 @@ async function downloadCard() {
 function copyShare() {
   navigator.clipboard.writeText(document.getElementById('shareLine').textContent + ' #AIAgentsLevelCalculator #AIAgents');
 }
+</script>
+<script type="module">
+import { parseInventoryManifest } from "./inventory-import.mjs";
+document.getElementById("files").addEventListener("change", async (event) => {
+  const input = event.target;
+  const file = input.files?.[0];
+  if (!file) return;
+  const status = document.getElementById("status");
+  try {
+    if (file.size > 16384) throw new Error("Inventory exceeds 16 KiB.");
+    const countsOnly = parseInventoryManifest(await file.text());
+    const box = document.getElementById("evidence");
+    box.value = [box.value.trim(), countsOnly].filter(Boolean).join("\n");
+    status.textContent = "Aggregate counts imported locally. Review before sending them to Clocked.";
+  } catch (error) {
+    status.textContent = "Import rejected: " + error.message + " No file content was submitted.";
+  } finally {
+    input.value = "";
+  }
+});
 </script>
 </body>
 </html>

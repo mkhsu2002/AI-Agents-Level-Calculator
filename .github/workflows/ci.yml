@@ -26,7 +26,7 @@ jobs:
       - name: Python unit tests
         run: python -m unittest discover -s tests -v
       - name: Cloudflare Worker and MCP unit tests
-        run: node --test worker/test.mjs worker/mcp.test.mjs worker/pages.test.mjs
+        run: node --test worker/test.mjs worker/mcp.test.mjs worker/pages.test.mjs worker/import.test.mjs
 
   production-smoke:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -1,6 +1,6 @@
 # AI Agents Level Calculator
 
-**Version: v0.01** - first public release.
+**Version: v0.14** - privacy-safe local inventory import.
 
 **What level is your AI agent? Prove it with evidence, not self-report.**
 
@@ -8,10 +8,10 @@ AI Agents Level Calculator is a single-page web app for every AI agent, on any p
 Paste the link to an agent and it can return a six-dimension level chart.
 No signup. No install. One screen, one button, one card.
 
-A visitor pastes or uploads evidence about their agent - a persona file,
-memory or notes, skill files, a goals list, a delivery log, or a generic
-JSON profile - picks their platform (Muse, ChatGPT, Claude, Gemini, or
-other), and presses **Run audit**. The app returns a level, a composite
+A visitor counts records in their own authorized environment, pastes only
+aggregate statistics (or imports a locally generated metadata-only JSON
+inventory), picks their platform, and presses **Run audit**.
+Never upload private source files or raw memory text. The app returns a level, a composite
 score, six dimension scores on a radar chart, per-field verified /
 estimated / missing status, and a downloadable, shareable 9:16 ability
 card (1080 x 1920).
@@ -117,13 +117,18 @@ Anything entered here without matching evidence text is scored as
 have no line in your evidence, such as a pass rate. If the JSON is
 invalid, the page says so and does not run the audit.
 
-### 5. Or upload evidence files
+### 5. Or import a metadata-only inventory
 
-Click the file picker and choose `.md`, `.txt`, or `.json` files.
-Their text is appended to the Evidence box, so you can edit it
-before pressing Run audit. Uploads are processed in memory and never
-written to disk. The same statistics-only rule applies: check the
-appended text for secrets before running.
+If your agent is authorized to inspect local metadata, run
+`python3 tools/agent_inventory.py --memory-dir /your/authorized/memory`
+with only categories where one file truly represents one item.
+Import the JSON output through the web picker. The browser copies
+only whitelisted numeric counts into Evidence; the JSON and raw
+local files are not sent to the server. Review all counts before Run audit.
+
+A file count is not independent proof of actual skills, memory items
+or completed work. Omit categories that cannot be counted meaningfully.
+Never import private source files, raw memory or conversation exports.
 
 ### 6. Press Run audit and read the result
 
