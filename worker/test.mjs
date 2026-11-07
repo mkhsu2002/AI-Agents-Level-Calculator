@@ -188,3 +188,22 @@ test("v0.15 Live API rejects non-aggregate and unbounded input before any Clocke
     globalThis.fetch = originalFetch;
   }
 });
+
+test("v0.22 card typography uses separated radar, bars, evidence and footer zones", async () => {
+  const demo = await (await call("/api/demo")).json();
+  const res = await call("/api/card", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(demo)
+  });
+  assert.equal(res.status, 200);
+  const svg = await res.text();
+  assert.match(svg, /width="1080" height="1920"/);
+  assert.match(svg, /SIX-AXIS RADAR/);
+  assert.match(svg, /MATCH = matched submitted text, not private-file proof/);
+  assert.match(svg, /font-size="17" font-weight="bold" text-anchor="end">MATCH/);
+  assert.doesNotMatch(svg, />verified<\/text>/);
+  assert.match(svg, /y="1855"/);
+  assert.match(svg, /y="1882"/);
+  assert.equal((svg.match(/width="466" height="36"/g) || []).length, 12);
+  assert.equal((svg.match(/<polygon /g) || []).length >= 5, true);
+});
