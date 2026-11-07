@@ -134,13 +134,26 @@ async function runAudit() {
   let profile = {};
   const raw = document.getElementById('profile').value.trim();
   if (raw) { try { profile = JSON.parse(raw); } catch (e) { status.textContent = 'Profile is not valid JSON.'; return; } }
-  const r = await fetch('/api/audit', { method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ agent_name: document.getElementById('agentName').value,
-      platform: document.getElementById('platform').value,
-      evidence_text: document.getElementById('evidence').value, profile }) });
-  lastAudit = await r.json();
-  showResult(lastAudit);
-  status.textContent = lastAudit.status === 'refused' ? 'Refused: ' + lastAudit.reason : 'Audit complete.';
+  try {
+    const r = await fetch('/api/audit', { method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ agent_name: document.getElementById('agentName').value,
+        platform: document.getElementById('platform').value,
+        evidence_text: document.getElementById('evidence').value, profile }) });
+    const payload = await r.json();
+    if (!r.ok || payload.error) {
+      lastAudit = null;
+      document.getElementById('result').style.display = 'none';
+      status.textContent = 'Audit unavailable: ' + (payload.error || 'HTTP ' + r.status);
+      return;
+    }
+    lastAudit = payload;
+    showResult(lastAudit);
+    status.textContent = lastAudit.status === 'refused' ? 'Refused: ' + lastAudit.reason : 'Audit complete.';
+  } catch (e) {
+    lastAudit = null;
+    document.getElementById('result').style.display = 'none';
+    status.textContent = 'Network error: ' + e.message;
+  }
 }
 function showResult(a) {
   document.getElementById('result').style.display = 'block';
