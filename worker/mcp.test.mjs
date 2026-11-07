@@ -106,3 +106,51 @@ test("v0.16 MCP Live rejects profile-only submissions without Clocked calls", as
   }
 });
 
+
+test("v0.18 MCP audit emits privacy-safe correlation log without evidence", async () => {
+  const entries = [];
+  const previous = console.info;
+  console.info = (line) => entries.push(line);
+  const privateCanary = "SECRET_CANARY_MUST_NEVER_APPEAR";
+  try {
+    const { response, body } = await rpc("tools/call", {
+      name: "run_level_audit",
+      arguments: {
+        agent_name: privateCanary, platform: "Muse",
+        evidence_text: "skills: 2", profile: {}
+      }
+    });
+    assert.equal(response.status, 200);
+    const id = body.result._meta["aalc/request_id"];
+    assert.match(id, /^[0-9a-f-]{36}$/i);
+    assert.equal(response.headers.get("X-AALC-Request-ID"), id);
+    assert.equal(entries.length, 1);
+    const entry = JSON.parse(entries[0]);
+    assert.equal(entry.request_id, id);
+    assert.equal(entry.tool, "run_level_audit");
+    assert.equal(entry.success, true);
+    assert.ok(Number.isFinite(entry.duration_ms));
+    assert.doesNotMatch(entries[0], /SECRET_CANARY|skills: 2|evidence_text|profile/);
+  } finally {
+    console.info = previous;
+  }
+});
+
+test("v0.18 rejected MCP audit still emits non-sensitive failure log", async () => {
+  const entries = [];
+  const previous = console.info;
+  console.info = (line) => entries.push(line);
+  try {
+    const { body } = await rpc("tools/call", {
+      name: "run_level_audit",
+      arguments: { agent_name: "Rejected", platform: "Muse", evidence_text: 99 }
+    });
+    assert.equal(body.result.isError, true);
+    const entry = JSON.parse(entries[0]);
+    assert.equal(entry.success, false);
+    assert.equal(entry.request_id, body.result._meta["aalc/request_id"]);
+    assert.doesNotMatch(entries[0], /Rejected|99/);
+  } finally {
+    console.info = previous;
+  }
+});
