@@ -9,7 +9,7 @@ This repo supports two deployment options: Cloudflare Workers using `wrangler.to
 3. Pages Functions are discovered from `functions/[[path]].js` at repo root. Ensure the Pages project includes the repo's functions directory.
 4. Under project Settings > Variables and Secrets, add `CLOCKED_API_KEY` as an encrypted secret for production. Never put it in the Git repository or the front-end assets.
 5. Deploy and verify: GET `/api/mode`, GET `/api/demo`, POST `/api/audit`, and POST JSON-RPC to `/mcp`. The provided `_routes.json` routes only /api/*, /mcp and /agent through Pages Functions.
-6. Only after verifying the *.pages.dev URL, connect a custom domain. A custom subdomain is recommended when the apex already serves a production site.
+6. Only after verifying the *.pages.dev URL, connect the custom domain `agents.flypigai.ca` under Pages > Custom domains. Keep `flypigai.ca` unchanged. Cloudflare DNS for `agents` should point to the Pages project as instructed by Cloudflare (typically managed automatically when the domain is in the same account).
 
 ## Test commands
 
