@@ -407,6 +407,20 @@ provisional. The full evidence trail is shown on the page.
 
 ## Changelog
 
+### v0.08 - 2026-11-06
+
+- Added complete `/agent` onboarding instructions for permission-scoped local file inventory, privacy-safe statistics, MCP / REST access and scoring limitations.
+
+### v0.07 - 2026-11-06
+
+- Corrected ability card and website language: source-matched self-audited statistics are not independently verified private files.
+- Added a regression assertion for the explicit provenance notice on downloadable cards.
+
+### v0.06 - 2026-11-06
+
+- Added `GET /api/health` with a zero-credit server-side HMAC signing and verification round-trip.
+- Production health response confirmed Live mode and `signature_roundtrip: true`.
+
 ### v0.05 - 2026-11-06
 
 - Live audit outputs receive a server-side HMAC proof (using a dedicated `CARD_SIGNING_KEY` if available, otherwise the server-side Clocked key).
