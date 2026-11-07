@@ -2,7 +2,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const base = process.env.AALC_BASE_URL || "https://aalc.flypigai.ca";
+// The custom hostname is protected by site WAF and returns HTTP 403 to GitHub-hosted runners.
+// CI targets the same Pages deployment using its default hostname; custom-domain checks run externally.
+const base = process.env.AALC_BASE_URL || "https://ai-agents-level-calculator.pages.dev";
 const localSource = readFileSync(new URL("../worker/src/index.js", import.meta.url), "utf8");
 const expected = process.env.AALC_EXPECT_VERSION || localSource.match(/const APP_VERSION = "([^"]+)"/)?.[1];
 if (!expected) throw new Error("Cannot determine expected version.");
