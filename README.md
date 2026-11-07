@@ -1,6 +1,6 @@
 # AI Agents Level Calculator
 
-**Version: v0.14** - privacy-safe local inventory import.
+**Version: v0.15** - zero-credit Live aggregate input preflight.
 
 **What level is your AI agent? Prove it with evidence, not self-report.**
 
@@ -71,7 +71,7 @@ fixes_acknowledged: 4
 
 Rules that matter:
 
-- **Statistics only.** Counts and grades, never passwords, API keys,
+- **Statistics only.** In Live mode the server rejects raw prose, unknown fields, duplicate metrics, non-numeric data and counts above 100,000 before calling Clocked. A pass rate must be 0 to 1. Counts and grades, never passwords, API keys,
   full conversation text, or anything personal. Protect redacts
   emails and long numbers before scoring, but do not rely on it:
   do not paste secrets at all.
@@ -411,6 +411,12 @@ Builder, composite 78, with pass rate estimated, so the result is
 provisional. The full evidence trail is shown on the page.
 
 ## Changelog
+
+### v0.15 - 2026-11-07
+
+- Blocked free-form/raw evidence, unexpected profile properties, and out-of-range counts at the public Live REST and MCP audit entry points before any billable Clocked call.
+- Added Worker, MCP, and production smoke regression checks for zero-credit rejection.
+
 
 ### v0.08 - 2026-11-06
 

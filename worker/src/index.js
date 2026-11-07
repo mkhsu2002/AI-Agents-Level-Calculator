@@ -38,7 +38,7 @@
 
 const CLOCKED_BASE = "https://clocked.rezolve.ai/clocked";
 const MAX_STATE_CHARS = 10000;
-const APP_VERSION = "v0.14";
+const APP_VERSION = "v0.15";
 
 const DIMENSIONS = [
   { key: "IDENTITY", label: "Identity" },
@@ -875,6 +875,62 @@ function jsonResponse(payload, status = 200) {
   return new Response(JSON.stringify(payload), { status, headers: { "Content-Type": "application/json" } });
 }
 
+
+function validateLiveAggregates(evidenceText, profile) {
+  // A live audit sends evidence to Clocked. Reject raw files, credentials and
+  // arbitrary prose before the first external API call, not after PII scanning.
+  const specs = new Map(PROFILE_FIELDS.map(spec => [spec.name, spec]));
+  function validateValue(name, value) {
+    const spec = specs.get(name);
+    if (!spec) return "Unknown aggregate field: " + name;
+    if (spec.kind === "boolean") {
+      return typeof value === "boolean" ? null : "Invalid boolean aggregate: " + name;
+    }
+    if (typeof value !== "number" || !Number.isFinite(value)) return "Invalid numeric aggregate: " + name;
+    if (name === "pass_rate") {
+      return value >= 0 && value <= 1 ? null : "pass_rate must be between 0 and 1.";
+    }
+    return Number.isSafeInteger(value) && value >= 0 && value <= 100000
+      ? null : "Aggregate count must be an integer between 0 and 100000: " + name;
+  }
+  if (typeof evidenceText !== "string" || evidenceText.length > MAX_STATE_CHARS) {
+    return "Live evidence must be aggregate text of at most 10000 characters.";
+  }
+  const seen = new Set();
+  for (const rawLine of evidenceText.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const match = /^([a-z_]+)\s*:\s*(true|false|\d+(?:\.\d+)?)$/.exec(line);
+    if (!match) return "Only aggregate field: value lines are permitted in Live mode; no raw files or prose.";
+    const name = match[1];
+    if (seen.has(name)) return "Duplicate aggregate field: " + name;
+    seen.add(name);
+    const rawValue = match[2];
+    const value = rawValue === "true" ? true : rawValue === "false" ? false : Number(rawValue);
+    const error = validateValue(name, value);
+    if (error) return error;
+  }
+  if (profile !== null && profile !== undefined) {
+    if (typeof profile !== "object" || Array.isArray(profile)) return "Profile must be a JSON object of aggregates.";
+    for (const [name, raw] of Object.entries(profile)) {
+      let value = raw;
+      if (raw !== null && typeof raw === "object") {
+        if (Array.isArray(raw) || Object.keys(raw).some(k => k !== "value" && k !== "status")) {
+          return "Profile fields may contain aggregate values only: " + name;
+        }
+        if (raw.status !== undefined && !["verified", "estimated", "missing"].includes(raw.status)) {
+          return "Invalid profile status: " + name;
+        }
+        value = raw.value;
+      }
+      if (value === null || value === undefined) continue;
+      const error = validateValue(name, value);
+      if (error) return error;
+    }
+  }
+  return null;
+}
+
 async function handleRequest(request, env) {
   const url = new URL(request.url);
   const mode = modeOf(env);
@@ -910,6 +966,10 @@ async function handleRequest(request, env) {
       payload = await request.json();
     } catch {
       return jsonResponse({ error: "Invalid JSON." }, 400);
+    }
+    if (mode === "live") {
+      const invalid = validateLiveAggregates(payload.evidence_text ?? "", payload.profile ?? {});
+      if (invalid) return jsonResponse({ error: invalid, version: APP_VERSION }, 400);
     }
     // Reject inputs that cannot produce evidence before calling billable Clocked APIs.
     const evidenceText = typeof payload.evidence_text === "string" ? payload.evidence_text.trim() : "";

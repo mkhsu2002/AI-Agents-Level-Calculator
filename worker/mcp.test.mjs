@@ -64,3 +64,23 @@ test("MCP notifications receive 202", async () => {
   }), env);
   assert.equal(res.status, 202);
 });
+
+
+test("v0.15 MCP Live audit shares aggregate-only preflight", async () => {
+  const liveEnv = { ...env, CLOCKED_API_KEY: "synthetic-test-only" };
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error("MCP must not call Clocked for raw text"); };
+  try {
+    const { body } = await rpc("tools/call", {
+      name: "run_level_audit",
+      arguments: {
+        agent_name: "Privacy test", platform: "Other",
+        evidence_text: "skills: 3\nprivate source text", profile: {}
+      }
+    }, liveEnv);
+    assert.equal(body.result.isError, true);
+    assert.match(body.result.content[0].text, /aggregate/i);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

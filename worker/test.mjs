@@ -137,3 +137,31 @@ test("v0.05 refuses a forged LIVE card without a server-issued audit signature",
   assert.equal(res.status, 403);
   assert.match((await res.json()).error, /server-issued audit proof/);
 });
+
+
+test("v0.15 Live API rejects non-aggregate and unbounded input before any Clocked call", async () => {
+  const liveEnv = { ...ENV, CLOCKED_API_KEY: "synthetic-test-only" };
+  const cases = [
+    { evidence_text: "skills: 3\nmy private conversation: do not upload", profile: {} },
+    { evidence_text: "skills: 100001", profile: {} },
+    { evidence_text: "skills: 9999999999999999999999999999999999", profile: {} },
+    { evidence_text: "pass_rate: 1.25", profile: {} },
+    { evidence_text: "skills: 2\nskills: 4", profile: {} },
+    { evidence_text: "skills: 2", profile: { notes: "private file contents" } },
+    { evidence_text: "skills: 2", profile: { skills: { value: 2, raw: "a private message" } } }
+  ];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error("External Clocked fetch must never happen for rejected evidence"); };
+  try {
+    for (const payload of cases) {
+      const res = await worker.fetch(new Request("https://example.com/api/audit", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent_name: "Synthetic Test", platform: "Other", ...payload })
+      }), liveEnv);
+      assert.equal(res.status, 400, JSON.stringify(payload));
+      assert.ok((await res.json()).error);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

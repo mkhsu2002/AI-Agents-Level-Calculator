@@ -63,6 +63,21 @@ const badAudit = await api("/api/audit", { method: "POST", body: JSON.stringify(
 assert.equal(badAudit.status, 400);
 console.log("PASS empty evidence rejected without Clocked calls");
 
+const unsafe = await api("/api/audit", { method: "POST", body: JSON.stringify({
+  agent_name: "Synthetic Smoke", platform: "Other",
+  evidence_text: "skills: 3\nraw private notes", profile: {}
+}) });
+assert.equal(unsafe.status, 400);
+assert.match(unsafe.data.error, /aggregate/i);
+console.log("PASS Live preflight rejects non-aggregate text with zero Clocked calls");
+
+const oversized = await api("/api/audit", { method: "POST", body: JSON.stringify({
+  agent_name: "Synthetic Smoke", platform: "Other",
+  evidence_text: "skills: 100001", profile: {}
+}) });
+assert.equal(oversized.status, 400);
+console.log("PASS out-of-range counts rejected with zero Clocked calls");
+
 const forged = await api("/api/card", { method: "POST", body: JSON.stringify({ mode: "live", agent_name: "Fake", result: { level: 99, title: "Legend" } }) });
 assert.equal(forged.status, 403);
 console.log("PASS forged Live card rejected");
