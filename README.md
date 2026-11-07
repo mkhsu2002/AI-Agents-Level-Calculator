@@ -407,6 +407,22 @@ provisional. The full evidence trail is shown on the page.
 
 ## Changelog
 
+### v0.05 - 2026-11-06
+
+- Live audit outputs receive a server-side HMAC proof (using a dedicated `CARD_SIGNING_KEY` if available, otherwise the server-side Clocked key).
+- A forged or altered Live audit can no longer be rendered as an official Live ability card.
+- Mock cards retain their explicit demo mode. Added a forged-card regression test.
+
+### v0.04 - 2026-11-06
+
+- Display API validation and network failures in the browser without attempting to render a missing result.
+- Keep the previous result hidden on audit failure.
+
+### v0.03 - 2026-11-06
+
+- Empty audits return HTTP 400 before billable Clocked calls.
+- Added the read-only `/api/version` endpoint for deployment checks.
+
 ### v0.02 - 2026-11-06
 
 - Reject cross-field AI source attribution: a verified numeric claim must match an exact named evidence line.
