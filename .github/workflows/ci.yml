@@ -6,6 +6,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# One active CI run per branch. Cancel superseded pushes instead of spending
+# runner minutes on obsolete commits during iterative development.
+concurrency:
+  group: aalc-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
