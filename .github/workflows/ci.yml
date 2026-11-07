@@ -26,4 +26,4 @@ jobs:
       - name: Python unit tests
         run: python -m unittest discover -s tests -v
       - name: Cloudflare Worker and MCP unit tests
-        run: node --test worker/test.mjs worker/mcp.test.mjs
+        run: node --test worker/test.mjs worker/mcp.test.mjs worker/pages.test.mjs
