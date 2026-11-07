@@ -99,7 +99,7 @@ deliveries: 100"></textarea>
     <table id="fieldTable"><tr><th>Field</th><th>Value</th><th>Status</th></tr></table>
     <h3>Evidence trail</h3>
     <ol id="trail"></ol>
-    <button class="secondary" onclick="downloadCard()">Download 9:16 card (SVG/PNG)</button>
+    <button class="secondary" onclick="downloadCard()">Download shareable 9:16 card (PNG)</button>
     <button class="secondary" onclick="copyShare()">Copy share text</button>
     <p class="small" id="shareLine"></p>
   </div>
@@ -224,13 +224,69 @@ function drawRadar(r) {
   ctx.fillStyle = 'rgba(94,234,212,0.35)'; ctx.fill();
   ctx.strokeStyle = '#5eead4'; ctx.lineWidth = 2; ctx.stroke();
 }
+function saveCardFile(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+async function svgToPng(svgBlob) {
+  const sourceUrl = URL.createObjectURL(svgBlob);
+  try {
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error('SVG image could not be decoded'));
+      image.src = sourceUrl;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = 1920;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('PNG canvas unavailable');
+    context.drawImage(image, 0, 0, 1080, 1920);
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('PNG encoding failed')), 'image/png');
+    });
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
 async function downloadCard() {
   if (!lastAudit) return;
-  const r = await fetch('/api/card', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(lastAudit) });
-  const blob = await r.blob();
-  const isSvg = (r.headers.get('Content-Type') || '').includes('svg');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = isSvg ? 'ai-agents-level-calculator-card.svg' : 'ai-agents-level-calculator-card.png'; a.click();
+  const status = document.getElementById('status');
+  try {
+    const response = await fetch('/api/card', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(lastAudit)
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || 'Card HTTP ' + response.status);
+    }
+    const blob = await response.blob();
+    const isSvg = (response.headers.get('Content-Type') || '').includes('svg');
+    if (isSvg) {
+      // Download PNG by default: common phones and sharing apps reject SVG.
+      try {
+        const png = await svgToPng(blob);
+        saveCardFile(png, 'aalc-agent-ability-card.png');
+        status.textContent = 'PNG ability card downloaded (1080 × 1920).';
+      } catch (error) {
+        saveCardFile(blob, 'aalc-agent-ability-card.svg');
+        status.textContent = 'PNG conversion unavailable: SVG card saved instead. ' + error.message;
+      }
+    } else {
+      saveCardFile(blob, 'aalc-agent-ability-card.png');
+      status.textContent = 'PNG ability card downloaded.';
+    }
+  } catch (error) {
+    status.textContent = 'Card download failed: ' + error.message;
+  }
 }
 function copyShare() {
   navigator.clipboard.writeText(document.getElementById('shareLine').textContent + ' #AIAgentsLevelCalculator #AIAgents');
