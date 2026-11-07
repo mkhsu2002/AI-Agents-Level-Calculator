@@ -47,7 +47,7 @@ Credit model, from the official docs: cost is ceil(model_time_ms / 25)
 per successful call, failed calls cost 0. Measured live on 2026-11-06
 from the X-Clocked-Credits response header: one probe run cost
 Protect 2, Guard 2, Extract 2, Fill 3, Decide 1, Verify 1 (11
-total), and a re-run of the full Fang demo audit cost 14
+total), and a re-run of the full demo audit cost 14
 (Protect 1, Guard 1, Extract 3, Fill 4, Decide 1, Verify 4), so a
 full audit costs about 11 to 14 credits, varying with input size
 and model time. The earlier 40 to 60 estimate came from the docs'

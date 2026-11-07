@@ -20,8 +20,8 @@ card (1080 x 1920).
 
 1. Open the app URL (locally: http://localhost:8000, or the deployed
    Cloudflare link).
-2. Click **Try the Fang demo**. A worked example audit appears: agent
-   Fang, Level 10 Builder, composite 78 in mock mode.
+2. Click **Try the demo**. A worked example audit appears: the demo
+   agent, Level 10 Builder, composite 78 in mock mode.
 3. Click **Download 9:16 card** to get the cyberpunk ability card
    (PNG from the local server, SVG from the Cloudflare Worker).
 4. That is the whole flow. To score your own agent, follow the user
@@ -46,7 +46,7 @@ If you deployed the app yourself and the badge says mock, the
 ### 2. Enter the agent name and platform
 
 - **Agent name** - the name shown on the result and the card, for
-  example `Fang`. Any name works.
+  example `Demo Agent`. Any name works.
 - **Platform** - pick Muse, ChatGPT, Claude, Gemini, or other. The
   platform is shown on the ability card as the agent's race (種族),
   for example `種族 MUSE`. It does not change the score.
@@ -178,7 +178,7 @@ returns a PNG, the Cloudflare Worker returns an SVG; both are
 
 Press **Copy share text** for a one-line summary with hashtags
 (`#AIAgentsLevelCalculator #AIAgents`), for example: `What level is
-your AI agent? Fang is Level 10 Builder, composite 78 on AI Agents
+your AI agent? Demo Agent is Level 10 Builder, composite 78 on AI Agents
 Level Calculator.` Post the text with the downloaded card image.
 
 ## Guide for AI agents - the one-URL flow
@@ -289,11 +289,11 @@ The mode is shown on the page and on every audit result.
 - **Mock mode** - when no key is set, the server runs in mock mode
   with a deterministic offline stand-in that returns the same shapes.
   Mock results are always labelled mock, so a mock audit can never be
-  mistaken for a live one. The built-in demo (`/api/demo`, agent Fang)
+  mistaken for a live one. The built-in demo (`/api/demo`, a demo agent)
   always runs in mock mode and is built from statistics only.
 
 Live mode was verified on 2026-11-06 with a free trial key (no card
-attached): a full audit of the Fang demo returned Level 10 Builder,
+attached): a full audit of the demo returned Level 10 Builder,
 composite 75, for 14 credits on a re-run with header-measured credits.
 
 ## Credit cost per audit
@@ -316,7 +316,7 @@ directly too.
 | --- | --- |
 | `GET /` | The single-page app. |
 | `GET /api/mode` | Returns `{"mode": "live"}` or `{"mode": "mock"}`. |
-| `GET /api/demo` | The Fang demo audit, always mock, statistics only. |
+| `GET /api/demo` | The demo audit, always mock, statistics only. |
 | `POST /api/audit` | Runs a full audit. Body: `{"agent_name", "platform", "evidence_text", "profile"}`. Returns the audit with level, dimensions, field detail, evidence trail, and credits used. |
 | `POST /api/card` | Renders the 9:16 ability card for an audit result. Body: the audit JSON from `/api/audit` or `/api/demo`. Returns PNG (local server) or SVG (Cloudflare Worker). |
 
@@ -407,9 +407,9 @@ node --test worker/test.mjs
 
 ## Demo example
 
-`examples/fang_demo.json` is the worked example for an agent called
-Fang, built from statistics only. Run it from the page with **Try the
-Fang demo**, or `GET /api/demo`. Expected mock result: Level 10
+`examples/demo_agent.json` is the worked example for a demo agent,
+built from statistics only. Run it from the page with **Try the
+demo**, or `GET /api/demo`. Expected mock result: Level 10
 Builder, composite 78, with pass rate estimated, so the result is
 provisional. The full evidence trail is shown on the page.
 
@@ -429,7 +429,7 @@ First public release.
   provisional flagging.
 - One-URL flow for agents: paste the link, follow the on-page
   agent instructions, report the level chart back.
-- Live mode verified end to end with a free trial key (Fang demo:
+- Live mode verified end to end with a free trial key (demo:
   Level 10 Builder, composite 75, about 11 to 14 credits per
   audit, read from the X-Clocked-Credits header).
 - Cloudflare Worker deployment (JavaScript, dependency-free) with

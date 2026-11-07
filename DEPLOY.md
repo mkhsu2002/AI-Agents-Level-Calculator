@@ -49,7 +49,7 @@ Two deliberate differences from the local Python server:
 - A Cloudflare account. The Worker runs on the free tier.
 - A Clocked account API key. Create it in the Clocked account
   profile. Live mode was verified on 2026-11-06 with a free trial
-  key (no card attached): a full audit of the Fang demo returned
+  key (no card attached): a full audit of the demo returned
   Level 10 Builder, composite 75, for 14 credits on a re-run with header-measured credits. Still verify the
   live audit right after deploy as described below, with your own
   key.
@@ -110,7 +110,7 @@ Open the Worker URL in a browser and check, in order:
 
 1. The page loads and shows `LIVE MODE - real Clocked calls`
    (not mock mode).
-2. Press **Try the Fang demo**. It returns Level 10 Builder,
+2. Press **Try the demo**. It returns Level 10 Builder,
    composite 78, provisional (mock demo, statistics only).
 3. Fill the form with a small piece of real evidence and press
    **Run audit**. A live audit returns a level, a composite, six

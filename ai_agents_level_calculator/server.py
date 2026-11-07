@@ -9,7 +9,7 @@ never sees the API key and never calls Clocked directly.
   POST /api/audit   - {"agent_name", "platform", "evidence_text", "profile": {...}}
                       returns the audit dict from pipeline.run_audit
   POST /api/card    - the audit dict, returns the 9:16 PNG card
-  GET  /api/demo    - the built-in Fang demo audit (mock mode, statistics only)
+  GET  /api/demo    - the built-in demo audit (mock mode, statistics only)
 
 Run:  python -m ai_agents_level_calculator.server
 Then open http://localhost:8000 - no signup, no install for visitors.
@@ -28,7 +28,7 @@ from .clocked_client import ClockedClient
 from .pipeline import run_audit
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
-DEMO_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "examples", "fang_demo.json")
+DEMO_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "examples", "demo_agent.json")
 
 MIME = {".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".png": "image/png"}
 

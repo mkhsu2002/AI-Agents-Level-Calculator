@@ -33,7 +33,7 @@
 //   Fill fields need a "type" ("extract" for numbers, "yes_no" for
 //   booleans); Grounding needs documents, claims, AND a non-empty
 //   "answer" string; PII returns entity spans only, redaction is
-//   done here. A full live audit of the Fang demo returned Level 10
+//   done here. A full live audit of the demo returned Level 10
 //   Builder, composite 75, for 48 credits.
 
 const CLOCKED_BASE = "https://clocked.rezolve.ai/clocked";
@@ -87,7 +87,7 @@ const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const LONG_DIGITS_RE = /\b\d{9,}\b/g;
 
 const DEMO = {
-  agent_name: "Fang",
+  agent_name: "Demo Agent",
   platform: "Muse",
   evidence_text: "persona_items: 7\nmemory_entries: 50\ndomains: 10\nskills: 5\nreasoning_examples: 4\nplatforms: 4\ngoals_total: 38\ngoals_done: 18\ndeliveries: 100\nfixes_acknowledged: 4",
   profile: { honesty_disclosed: true, pass_rate: 0.8 },

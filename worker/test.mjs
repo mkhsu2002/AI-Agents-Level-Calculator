@@ -31,7 +31,7 @@ test("GET / serves the frontend through ASSETS", async () => {
   assert.match(await res.text(), /stub frontend/);
 });
 
-test("GET /api/demo returns the Fang demo audit", async () => {
+test("GET /api/demo returns the demo audit", async () => {
   const res = await call("/api/demo");
   const audit = await res.json();
   assert.equal(audit.status, "complete");

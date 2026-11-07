@@ -52,12 +52,12 @@ is provisional.
 
 Public repository: https://github.com/mkhsu2002/AI-Agents-Level-Calculator
 Live demo link to be added after the user deploys on Cloudflare
-(see DEPLOY.md). The built-in demo (agent Fang, statistics only)
+(see DEPLOY.md). The built-in demo (a demo agent, statistics only)
 runs in mock mode from the landing page.
 
 ## Live verification (2026-11-06, free trial key, no card attached)
 
-A full live audit of the Fang demo completed end to end. Result:
+A full live audit of the demo completed end to end. Result:
 Level 10 Builder, composite 75, dimensions Identity 86,
 Knowledge 81, Skill 70, Span 91, Reliability 58, Integrity 62.
 Decide returned real probabilities (autonomy domain_full 0.66,
