@@ -35,7 +35,7 @@ Two deliberate differences from the local Python server:
    locally).
 2. **Verify cost.** The Worker checks all filled claims in one
    batched grounding call, the same as the Python server, so a live
-   Worker audit costs the same 40 to 60 credits. (An earlier draft
+   Worker audit costs the same 11 to 14 credits. (An earlier draft
    used one grounding call per claim from the documented shape;
    live testing on 2026-11-06 showed the batched shape works and
    the per-claim shape does not.) Mock mode costs nothing.
@@ -50,7 +50,7 @@ Two deliberate differences from the local Python server:
 - A Clocked account API key. Create it in the Clocked account
   profile. Live mode was verified on 2026-11-06 with a free trial
   key (no card attached): a full audit of the Fang demo returned
-  Level 10 Builder, composite 75, for 48 credits. Still verify the
+  Level 10 Builder, composite 75, for 14 credits on a re-run with header-measured credits. Still verify the
   live audit right after deploy as described below, with your own
   key.
 

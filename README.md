@@ -114,7 +114,7 @@ The mode is shown on the page and on every audit result.
 Clocked charges `ceil(model_time_ms / 25)` credits per successful
 call; failed calls cost 0. Measured averages are about 1 credit for
 Decide, 8 for Extract, 13 for Fill, and about 13 for Protect. A full
-audit makes about 6 calls and costs roughly 40 to 60 credits. The free
+audit makes about 6 calls and costs about 11 to 14 credits, measured live from the X-Clocked-Credits header. The free
 trial is 4,000 credits, and the code `CLOCKEDHACKATHON` adds 16,000,
 for 20,000 total - enough for roughly 300 to 400 audits.
 
@@ -165,7 +165,7 @@ guaranteed to work on a Pyodide-based Python Worker.
 
 Live mode was verified on 2026-11-06 with a free trial key (no card
 attached): a full audit of the Fang demo returned Level 10 Builder,
-composite 75, for 48 credits. The raw HTTP shapes the Worker sends
+composite 75, for 14 credits on a re-run with header-measured credits. The raw HTTP shapes the Worker sends
 were verified live the same day, including the UUID Idempotency-Key
 header every call needs.
 

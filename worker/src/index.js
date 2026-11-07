@@ -72,7 +72,7 @@ const PROFILE_FIELDS = [
   { name: "fixes_acknowledged", kind: "number", hint: "Number of acknowledged fixes or corrections" },
 ];
 
-const MOCK_CREDITS = { decide: 1, extract: 8, fill: 13, grounding: 11, injection: 2, pii: 13 };
+const MOCK_CREDITS = { decide: 1, extract: 2, fill: 3, grounding: 1, injection: 2, pii: 2 };
 
 const INJECTION_PATTERNS = [
   /ignore (all )?(previous|prior|above) instructions/,
@@ -98,6 +98,12 @@ const DEMO = {
 // ---------------------------------------------------------------------------
 
 function creditsFromUsage(result, endpoint) {
+  // Real settled credits come from the X-Clocked-Credits response
+  // header, attached by clockedCall as _header_credits. The body
+  // carries no cost field, so reading only the body falls back to
+  // the mock constants and overstates the cost.
+  const header = result && result._header_credits;
+  if (typeof header === "number" && Number.isFinite(header)) return header;
   const cost = result && result.usage && result.usage.cost_credits;
   if (typeof cost === "number") return cost;
   return MOCK_CREDITS[endpoint] || 1;
@@ -117,7 +123,10 @@ async function clockedCall(key, endpoint, payload) {
     const text = await res.text();
     throw new Error("Clocked " + endpoint + " failed with HTTP " + res.status + ": " + text);
   }
-  return res.json();
+  const parsed = await res.json();
+  const headerCredits = parseInt(res.headers.get("x-clocked-credits") || "", 10);
+  if (Number.isFinite(headerCredits)) parsed._header_credits = headerCredits;
+  return parsed;
 }
 
 function mockPii(text) {

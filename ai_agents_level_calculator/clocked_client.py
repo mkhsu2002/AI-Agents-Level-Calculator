@@ -44,11 +44,17 @@ Live request shapes, verified against the real API on 2026-11-06
   verdicts otherwise; risk is "low" / "high".
 
 Credit model, from the official docs: cost is ceil(model_time_ms / 25)
-per successful call, failed calls cost 0. Measured averages are about
-1 credit for Decide, 8 for Extract, 13 for Fill, about 13 for Protect.
-A full audit makes about 6 calls and costs roughly 40 to 60 credits,
-far below the 20,000 free credits (4,000 trial plus 16,000 from the
-code CLOCKEDHACKATHON).
+per successful call, failed calls cost 0. Measured live on 2026-11-06
+from the X-Clocked-Credits response header: one probe run cost
+Protect 2, Guard 2, Extract 2, Fill 3, Decide 1, Verify 1 (11
+total), and a re-run of the full Fang demo audit cost 14
+(Protect 1, Guard 1, Extract 3, Fill 4, Decide 1, Verify 4), so a
+full audit costs about 11 to 14 credits, varying with input size
+and model time. The earlier 40 to 60 estimate came from the docs'
+average timings and was wrong; the formula checks out exactly
+against the measured model times (for example Protect took 42 ms,
+ceil(42 / 25) = 2). Far below the 20,000 free credits (4,000 trial
+plus 16,000 from the code CLOCKEDHACKATHON).
 """
 
 import os
@@ -58,11 +64,11 @@ BASE_URL = "https://clocked.rezolve.ai/clocked"
 
 MOCK_CREDITS = {
     "decide": 1,
-    "extract": 8,
-    "fill": 13,
-    "grounding": 11,
+    "extract": 2,
+    "fill": 3,
+    "grounding": 1,
     "injection": 2,
-    "pii": 13,
+    "pii": 2,
 }
 
 INJECTION_PATTERNS = [
@@ -85,6 +91,19 @@ def _credits_from_usage(result, endpoint):
     if isinstance(cost, (int, float)):
         return int(cost)
     return MOCK_CREDITS.get(endpoint, 1)
+
+
+def _credits_from_result(sdk_result, body, endpoint):
+    """Real settled credits live on the SDK Result object, read from
+    the X-Clocked-Credits response header. The response body itself
+    carries no cost field, so reading only the body falls back to the
+    mock constants and overstates the cost. (That is how the earlier
+    48-credit figure happened: it was the fallback sum, not measured.)
+    """
+    credits = getattr(sdk_result, "credits", None)
+    if isinstance(credits, int):
+        return credits
+    return _credits_from_usage(body, endpoint)
 
 
 def _coerce_value(field):
@@ -168,7 +187,8 @@ class ClockedClient:
     def pii(self, text):
         if self.mode == "mock":
             return self._mock_pii(text)
-        result = dict(self._sdk.pii(text=text))
+        sdk_result = self._sdk.pii(text=text)
+        result = dict(sdk_result)
         entities = result.get("entities") or []
         # The API returns entity spans, not redacted text, so redact here.
         findings = []
@@ -184,7 +204,7 @@ class ClockedClient:
         return {
             "redacted_text": redacted,
             "findings": findings,
-            "credits": _credits_from_usage(result, "pii"),
+            "credits": _credits_from_result(sdk_result, result, "pii"),
             "raw": result,
         }
 
@@ -208,7 +228,8 @@ class ClockedClient:
     def injection(self, text):
         if self.mode == "mock":
             return self._mock_injection(text)
-        result = dict(self._sdk.injection(text=text))
+        sdk_result = self._sdk.injection(text=text)
+        result = dict(sdk_result)
         label = result.get("verdict") or result.get("decision") or "safe"
         risk = result.get("risk", "low")
         if isinstance(label, dict):
@@ -221,7 +242,7 @@ class ClockedClient:
         return {
             "verdict": label,
             "risk": risk,
-            "credits": _credits_from_usage(result, "injection"),
+            "credits": _credits_from_result(sdk_result, result, "injection"),
             "raw": result,
         }
 
@@ -240,13 +261,14 @@ class ClockedClient:
         if self.mode == "mock":
             return self._mock_extract(text, fields)
         sdk_fields = {name: {"target": target} for name, target in fields.items()}
-        result = dict(self._sdk.extract(text=text, fields=sdk_fields))
+        sdk_result = self._sdk.extract(text=text, fields=sdk_fields)
+        result = dict(sdk_result)
         answers, missing = _parse_fields_result(text, result.get("fields") or {})
         return {
             "answers": answers,
             "missing": missing,
             "unsupported": result.get("unsupported", []),
-            "credits": _credits_from_usage(result, "extract"),
+            "credits": _credits_from_result(sdk_result, result, "extract"),
             "raw": result,
         }
 
@@ -296,13 +318,14 @@ class ClockedClient:
             if f.get("options"):
                 entry["options"] = f["options"]
             sdk_fields[f["name"]] = entry
-        result = dict(self._sdk.fill(text=text, fields=sdk_fields))
+        sdk_result = self._sdk.fill(text=text, fields=sdk_fields)
+        result = dict(sdk_result)
         answers, missing = _parse_fields_result(text, result.get("fields") or {})
         return {
             "values": answers,
             "missing": missing,
             "unsupported": result.get("unsupported", []),
-            "credits": _credits_from_usage(result, "fill"),
+            "credits": _credits_from_result(sdk_result, result, "fill"),
             "raw": result,
         }
 
@@ -324,10 +347,11 @@ class ClockedClient:
         """
         if self.mode == "mock":
             return self._mock_decide(state, questions)
-        result = dict(self._sdk.decide(state=state, questions=questions))
+        sdk_result = self._sdk.decide(state=state, questions=questions)
+        result = dict(sdk_result)
         return {
             "answers": result.get("answers", {}),
-            "credits": _credits_from_usage(result, "decide"),
+            "credits": _credits_from_result(sdk_result, result, "decide"),
             "raw": result,
         }
 
@@ -355,7 +379,8 @@ class ClockedClient:
         # Live grounding requires a non-empty "answer" string as well
         # as documents and claims; the joined claims serve as it.
         answer = "; ".join(claims)
-        result = dict(self._sdk.grounding(documents=documents, claims=claims, answer=answer))
+        sdk_result = self._sdk.grounding(documents=documents, claims=claims, answer=answer)
+        result = dict(sdk_result)
         answers = {}
         for item in result.get("claims") or []:
             claim = item.get("claim")
@@ -375,7 +400,7 @@ class ClockedClient:
             }
         return {
             "answers": answers,
-            "credits": _credits_from_usage(result, "grounding"),
+            "credits": _credits_from_result(sdk_result, result, "grounding"),
             "raw": result,
         }
 
